@@ -395,7 +395,7 @@ app.post('/api/chat', async (req, res) => {
 
     const response = await anthropic.messages.create({
       model: 'claude-opus-4-6',
-      max_tokens: 2048,
+      max_tokens: 16384,
       system: systemMessage,
       messages: messages
     });
