@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <title>Användarhandbok — Luleå-klass Beslutsmodell</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    @page {
+      size: A4;
+      margin: 20mm 22mm 20mm 22mm;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      font-size: 9.5pt;
+      line-height: 1.55;
+      color: #1a1a2e;
+      background: white;
+    }
+
+    /* ── Cover ── */
+    .cover {
+      page-break-after: always;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 40px 0;
+    }
+
+    .cover-badge {
+      display: inline-block;
+      background: #eef2ff;
+      color: #4338ca;
+      font-size: 8pt;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+    }
+
+    .cover h1 {
+      font-size: 28pt;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      color: #0f172a;
+      margin-bottom: 8px;
+    }
+
+    .cover h1 span {
+      color: #3b82f6;
+    }
+
+    .cover-subtitle {
+      font-size: 13pt;
+      color: #64748b;
+      font-weight: 400;
+      margin-bottom: 32px;
+    }
+
+    .cover-line {
+      width: 60px;
+      height: 3px;
+      background: linear-gradient(90deg, #3b82f6, #06b6d4);
+      border-radius: 2px;
+      margin-bottom: 24px;
+    }
+
+    .cover-meta {
+      font-size: 8.5pt;
+      color: #94a3b8;
+      line-height: 1.8;
+    }
+
+    .cover-meta strong {
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    .cover-footer {
+      margin-top: auto;
+      padding-top: 40px;
+      display: flex;
+      gap: 24px;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 16px;
+    }
+
+    .cover-footer-item {
+      font-size: 8pt;
+      color: #94a3b8;
+    }
+
+    .cover-footer-item strong {
+      display: block;
+      color: #475569;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    /* ── Section Headers ── */
+    h2 {
+      font-size: 16pt;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #0f172a;
+      margin-bottom: 6px;
+      margin-top: 28px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #3b82f6;
+      display: inline-block;
+    }
+
+    h2:first-child { margin-top: 0; }
+
+    h3 {
+      font-size: 11pt;
+      font-weight: 700;
+      color: #1e293b;
+      margin-top: 18px;
+      margin-bottom: 6px;
+    }
+
+    h4 {
+      font-size: 9.5pt;
+      font-weight: 700;
+      color: #334155;
+      margin-top: 12px;
+      margin-bottom: 4px;
+    }
+
+    p {
+      margin-bottom: 8px;
+      color: #334155;
+    }
+
+    /* ── Numbered Steps ── */
+    .steps {
+      counter-reset: step;
+      list-style: none;
+      padding: 0;
+      margin: 8px 0 12px;
+    }
+
+    .steps li {
+      counter-increment: step;
+      padding: 6px 0 6px 32px;
+      position: relative;
+      margin-bottom: 4px;
+    }
+
+    .steps li::before {
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: 5px;
+      width: 20px;
+      height: 20px;
+      background: #3b82f6;
+      color: white;
+      font-size: 8pt;
+      font-weight: 700;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      text-align: center;
+    }
+
+    /* ── Info Boxes ── */
+    .box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 10px 14px;
+      margin: 10px 0;
+      font-size: 9pt;
+    }
+
+    .box.blue {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+    }
+
+    .box.green {
+      background: #f0fdf4;
+      border-color: #bbf7d0;
+    }
+
+    .box.amber {
+      background: #fffbeb;
+      border-color: #fde68a;
+    }
+
+    .box-title {
+      font-weight: 700;
+      font-size: 9pt;
+      margin-bottom: 3px;
+      color: #0f172a;
+    }
+
+    .box.blue .box-title { color: #1d4ed8; }
+    .box.green .box-title { color: #166534; }
+    .box.amber .box-title { color: #92400e; }
+
+    /* ── Tables ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0;
+      font-size: 8.5pt;
+    }
+
+    th {
+      text-align: left;
+      font-weight: 700;
+      font-size: 7.5pt;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #64748b;
+      padding: 6px 8px;
+      border-bottom: 2px solid #e2e8f0;
+      background: #f8fafc;
+    }
+
+    td {
+      padding: 6px 8px;
+      border-bottom: 1px solid #f1f5f9;
+      vertical-align: top;
+    }
+
+    tr:hover { background: #f8fafc; }
+
+    /* ── Key Badges ── */
+    .key {
+      display: inline-block;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 3px;
+      padding: 1px 6px;
+      font-size: 8pt;
+      font-weight: 600;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      color: #475569;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 7.5pt;
+      font-weight: 600;
+    }
+
+    .tag.blue { background: #dbeafe; color: #1e40af; }
+    .tag.green { background: #dcfce7; color: #166534; }
+    .tag.red { background: #fee2e2; color: #991b1b; }
+    .tag.purple { background: #f3e8ff; color: #6b21a8; }
+
+    /* ── Columns ── */
+    .cols {
+      display: flex;
+      gap: 16px;
+      margin: 10px 0;
+    }
+
+    .cols > div {
+      flex: 1;
+    }
+
+    /* ── Feature Grid ── */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 10px 0;
+    }
+
+    .feature {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 10px 12px;
+    }
+
+    .feature-icon {
+      font-size: 14pt;
+      margin-bottom: 4px;
+    }
+
+    .feature h4 {
+      margin-top: 0;
+      font-size: 9pt;
+    }
+
+    .feature p {
+      font-size: 8.5pt;
+      color: #64748b;
+      margin-bottom: 0;
+    }
+
+    /* ── Code ── */
+    code {
+      background: #1e293b;
+      color: #e2e8f0;
+      padding: 6px 12px;
+      border-radius: 4px;
+      display: block;
+      font-size: 8.5pt;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      margin: 6px 0;
+      line-height: 1.6;
+    }
+
+    /* ── Page Breaks ── */
+    .page-break {
+      page-break-before: always;
+    }
+
+    /* ── Bullet lists ── */
+    ul {
+      padding-left: 16px;
+      margin: 6px 0 10px;
+    }
+
+    ul li {
+      margin-bottom: 3px;
+    }
+
+    /* ── Small text ── */
+    .small {
+      font-size: 8pt;
+      color: #94a3b8;
+    }
+
+    .text-muted { color: #64748b; }
+  </style>
+</head>
+<body>
+
+  <!-- ═══════════ COVER ═══════════ -->
+  <div class="cover">
+    <div class="cover-badge">Konfidentiell Användarhandbok</div>
+    <h1>Luleå-klass<br><span>Beslutsmodell</span></h1>
+    <p class="cover-subtitle">Verktyg för analys av Sveriges upphandling av nya ytstridsfartyg</p>
+    <div class="cover-line"></div>
+    <div class="cover-meta">
+      <strong>Syfte:</strong> Interaktiv beslutsmodellering med AI-stödd analys av upphandlingens alla dimensioner<br>
+      <strong>Kandidater:</strong> Naval Group (FDI) &bull; Babcock/Saab (Arrowhead 120) &bull; Navantia (ALFA 4000)<br>
+      <strong>AI-motor:</strong> Claude Opus 4.6 (Anthropic)<br>
+      <strong>Version:</strong> 1.0 &bull; Februari 2026
+    </div>
+    <div class="cover-footer">
+      <div class="cover-footer-item">
+        <strong>Programvärde</strong>
+        SEK 40–60 miljarder
+      </div>
+      <div class="cover-footer-item">
+        <strong>Antal fartyg</strong>
+        4 st Luleå-klass fregatter
+      </div>
+      <div class="cover-footer-item">
+        <strong>Tidsplan</strong>
+        Kontrakt H1 2026, leverans 2030/2035
+      </div>
+      <div class="cover-footer-item">
+        <strong>Beställare</strong>
+        FMV / Försvarsmakten
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ CONTENTS ═══════════ -->
+  <h2>Innehåll</h2>
+
+  <table>
+    <tr><td style="font-weight:600;">1. Snabbstart</td><td class="text-muted">Installation och uppstart på 2 minuter</td></tr>
+    <tr><td style="font-weight:600;">2. Översikt</td><td class="text-muted">Verktygets fyra huvudvyer</td></tr>
+    <tr><td style="font-weight:600;">3. Beslutsträd</td><td class="text-muted">Navigera och utforska 40+ beslutskriterier</td></tr>
+    <tr><td style="font-weight:600;">4. Företagsprofiler</td><td class="text-muted">Detaljerad analys per kandidat</td></tr>
+    <tr><td style="font-weight:600;">5. Jämförelsevy</td><td class="text-muted">Sida-vid-sida poängjämförelse</td></tr>
+    <tr><td style="font-weight:600;">6. Scenarion</td><td class="text-muted">Fyra möjliga utfall att utforska</td></tr>
+    <tr><td style="font-weight:600;">7. AI-analys</td><td class="text-muted">Så använder du Claude Opus 4.6</td></tr>
+    <tr><td style="font-weight:600;">8. Användningsfall</td><td class="text-muted">Guide för företagsrepresentanter</td></tr>
+  </table>
+
+  <!-- ═══════════ 1. SNABBSTART ═══════════ -->
+  <div class="page-break"></div>
+  <h2>1. Snabbstart</h2>
+
+  <p>Verktyget körs som en lokal webbapplikation på din dator. Ingen data skickas till externa servrar förutom API-anrop till Anthropic för AI-analysen.</p>
+
+  <h3>Krav</h3>
+  <ul>
+    <li><strong>Node.js</strong> (version 18 eller senare)</li>
+    <li><strong>Anthropic API-nyckel</strong> för AI-funktioner (valfritt men rekommenderat)</li>
+    <li>Modern webbläsare (Chrome, Safari, Firefox)</li>
+  </ul>
+
+  <h3>Installation</h3>
+  <ol class="steps">
+    <li>Öppna <strong>Terminal</strong> på din Mac</li>
+    <li>Navigera till projektmappen:
+      <code>cd ~/Desktop/Nav/lulea-decision-tool</code>
+    </li>
+    <li>Installera beroenden (behövs bara första gången):
+      <code>npm install</code>
+    </li>
+    <li>Ange din API-nyckel — öppna <span class="key">server.js</span> och klistra in nyckeln på rad 6:
+      <code>const API_KEY = 'sk-ant-din-nyckel-här';</code>
+    </li>
+    <li>Starta servern:
+      <code>node server.js</code>
+    </li>
+    <li>Öppna <strong>http://localhost:8080</strong> i din webbläsare</li>
+  </ol>
+
+  <div class="box blue">
+    <div class="box-title">Tips</div>
+    Verktyget fungerar även utan API-nyckel — beslutsträdet, poäng, profiler och jämförelser är fullt tillgängliga. AI-chatten kräver dock en giltig nyckel.
+  </div>
+
+  <!-- ═══════════ 2. ÖVERSIKT ═══════════ -->
+  <h2>2. Översikt</h2>
+
+  <p>Applikationen har <strong>fyra huvudvyer</strong> som nås via navigeringsfältet högst upp:</p>
+
+  <div class="feature-grid">
+    <div class="feature">
+      <div class="feature-icon">🌳</div>
+      <h4>Beslutsträd</h4>
+      <p>Expanderbart/ihopfällbart träd med alla beslutskriterier, vikter, poäng per företag, påverkansvektorer och AI-analys.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">👥</div>
+      <h4>Företagsprofiler</h4>
+      <p>Djupgående profiler för Naval Group, Babcock/Saab och Navantia med specifikationer, styrkor/svagheter och fullständig poängbrytning.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">📊</div>
+      <h4>Jämförelsevy</h4>
+      <p>Sida-vid-sida jämförelsetabell med poäng för alla tre kandidater. Grön prick markerar ledaren per kategori.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">📋</div>
+      <h4>Scenarion</h4>
+      <p>Fyra tänkbara utfall (franskt, spanskt, brittiskt/svenskt, blandat) med konsekvensanalys och AI-utforskning.</p>
+    </div>
+  </div>
+
+  <!-- ═══════════ 3. BESLUTSTRÄD ═══════════ -->
+  <div class="page-break"></div>
+  <h2>3. Beslutsträd</h2>
+
+  <p>Beslutsträdet är verktygets kärna. Det modellerar hela upphandlingsbeslutet i en hierarkisk struktur med <strong>fyra utvärderingspelare</strong> och över 40 detaljerade noder.</p>
+
+  <h3>Utvärderingspelare och vikter</h3>
+  <table>
+    <thead>
+      <tr><th>Pelare</th><th>Vikt</th><th>Beskrivning</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Operativ förmåga</strong></td>
+        <td><span class="tag blue">35%</span></td>
+        <td>Luftförsvar/IAMD, ubåtsjakt, ytstridsförmåga, sjöstyrkeledning, uthållighet, framtidssäkring</td>
+      </tr>
+      <tr>
+        <td><strong>Leverans &amp; Schemaläggsrisk</strong></td>
+        <td><span class="tag blue">30%</span></td>
+        <td>Designmognad, scheematrovärdighet, integrationsrisk, programledning</td>
+      </tr>
+      <tr>
+        <td><strong>Livscykelkostnad</strong></td>
+        <td><span class="tag blue">20%</span></td>
+        <td>Anskaffningskostnad, underhåll genom livstiden, bemanning &amp; utbildning</td>
+      </tr>
+      <tr>
+        <td><strong>Industri &amp; Försörjningstrygghet</strong></td>
+        <td><span class="tag blue">15%</span></td>
+        <td>Svenskt industrideltagande, suveränitet, strategiskt partnerskapsvärde</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Navigering</h3>
+  <ol class="steps">
+    <li><strong>Klicka på en nod</strong> i vänsterpanelen för att expandera/fälla ihop den och visa detaljer i högerpanelen</li>
+    <li>Högerpanelen visar: brödsmulnavigering, nodbeskrivning, <strong>påverkansvektorer</strong> (färgkodade efter påverkansgrad) och <strong>poängkort per företag</strong></li>
+    <li>Varje poängkort visar: poäng (1–10), visuell stapel, motivering och <strong>tre åtgärdsknappar</strong></li>
+  </ol>
+
+  <h3>Poängkortets knappar</h3>
+  <table>
+    <thead>
+      <tr><th>Knapp</th><th>Funktion</th><th>Användning</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="tag blue">Improve Score</span></td>
+        <td>AI föreslår konkreta åtgärder för att höja poängen</td>
+        <td>Identifiera förbättringsområden och handlingsplaner</td>
+      </tr>
+      <tr>
+        <td><span class="tag green">Suggest Actions</span></td>
+        <td>AI rekommenderar konkreta steg företaget kan ta</td>
+        <td>Diplomati, teknikdemonstration, partnerskap</td>
+      </tr>
+      <tr>
+        <td><span class="tag purple">Challenge</span></td>
+        <td>AI debatterar poängen med argument för och emot</td>
+        <td>Stresstesta bedömningen och ifrågasätt antaganden</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Påverkansvektorer</h3>
+  <p>Varje nod kan ha tillhörande <strong>påverkansvektorer</strong> — faktorer som påverkar utfallet. Dessa visas som färgkodade taggar:</p>
+  <ul>
+    <li><span class="tag red">Hög</span> — Stark, dokumenterad påverkan på beslutet</li>
+    <li><span class="tag purple">Medium</span> — Märkbar påverkan, mindre avgörande</li>
+    <li><span class="tag green">Låg</span> — Begränsad direkt påverkan</li>
+  </ul>
+
+  <!-- ═══════════ 4. PROFILER ═══════════ -->
+  <div class="page-break"></div>
+  <h2>4. Företagsprofiler</h2>
+
+  <p>Profilvy ger en komplett bild av varje kandidats position. Välj företag i vänsterpanelen.</p>
+
+  <h3>Profilens delar</h3>
+
+  <h4>Övergripande kort</h4>
+  <p>Visar företagsnamn, plattform, ursprungsland, <strong>totalpoäng</strong> (viktat genomsnitt) och poäng per utvärderingspelare.</p>
+
+  <h4>Plattformsspecifikationer</h4>
+  <p>Tekniska data: deplacement, längd, radar, VLS-celler, besättning, beväpning, varv, etc.</p>
+
+  <h4>Styrkor &amp; Svagheter</h4>
+  <p>Sammanställning baserad på öppna källor — grönmarkerade styrkor och rödmarkerade risker/svagheter.</p>
+
+  <h4>Detaljerad poängbrytning</h4>
+  <p>Tabell med alla kriterier, vikter och individuella poäng. <strong>Klicka på en rad</strong> för att navigera direkt till den noden i beslutsträdet.</p>
+
+  <h3>Kandidatöversikt</h3>
+  <table>
+    <thead>
+      <tr><th>Kandidat</th><th>Plattform</th><th>Starkast på</th><th>Svagast på</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong style="color:#2563eb;">Naval Group</strong></td>
+        <td>FDI-fregatt</td>
+        <td>Designmognad, luftförsvar, leveranstrovärdighet</td>
+        <td>Bemanningsbehov, svensk systemintegration</td>
+      </tr>
+      <tr>
+        <td><strong style="color:#059669;">Babcock/Saab</strong></td>
+        <td>Arrowhead 120</td>
+        <td>Svensk suveränitet, låg bemanning, 9LV CMS</td>
+        <td>Designmognad (ingen T31 levererad), schemaläggsrisk</td>
+      </tr>
+      <tr>
+        <td><strong style="color:#dc2626;">Navantia</strong></td>
+        <td>ALFA 4000</td>
+        <td>Kostnadskonkurrens, flexibel industrimodell, utbildning</td>
+        <td>Konceptnivå-design, minst tillväxtmarginal, svagast i Arktis</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ═══════════ 5. JÄMFÖRELSEVY ═══════════ -->
+  <h2>5. Jämförelsevy</h2>
+
+  <p>Jämförelsevyn visar en <strong>komplett tabell</strong> med alla tre kandidaters poäng sida vid sida:</p>
+
+  <ul>
+    <li><strong>Grön prick</strong> (●) markerar den ledande kandidaten per kriterium</li>
+    <li>Poäng är <strong>färgkodade</strong>: grön (≥8), gul (6–7.9), röd (&lt;6)</li>
+    <li>Kategorirader visar viktade genomsnitt</li>
+    <li><strong>Klicka på en rad</strong> för att navigera direkt till den noden i beslutsträdet</li>
+  </ul>
+
+  <div class="box green">
+    <div class="box-title">Snabbtolkning</div>
+    Titta efter mönster: Var har en kandidat konsekvent gröna poäng? Var finns röda poäng som kan vara avgörande? Jämförelsevyn ger den snabbaste överblicken av det kompetitiva landskapet.
+  </div>
+
+  <!-- ═══════════ 6. SCENARION ═══════════ -->
+  <div class="page-break"></div>
+  <h2>6. Scenarion</h2>
+
+  <p>Fyra möjliga utfall baserade på öppen källanalys. Varje scenariokort visar:</p>
+
+  <table>
+    <thead>
+      <tr><th>Scenario</th><th>Beskrivning</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="tag blue">A — Frankrike/FDI</span></td>
+        <td>Maximerar luftförsvarsförmåga. Stärker bilaterala banden via GlobalEye-kopplingen. Risk: svensk systemintegration och exportkontroll.</td>
+      </tr>
+      <tr>
+        <td><span class="tag red">B — Spanien/ALFA 4000</span></td>
+        <td>Skräddarsydd för svenska behov med NATO-fokus och stegvis leverans med utbildade besättningar. Risk: ny design, minsta plattformen.</td>
+      </tr>
+      <tr>
+        <td><span class="tag green">C — UK-Sverige/AH-120</span></td>
+        <td>Starkast för svensk suveränitet och nordisk/brittisk försvarssamverkan. Lägst bemanning. Risk: AH-120 ej färdig design, T31 ej levererad.</td>
+      </tr>
+      <tr>
+        <td><span class="tag purple">D — Blandad anskaffning</span></td>
+        <td>Två "snabba" fartyg + option på senare enheter. Hypotetiskt — inga officiella källor stöder detta alternativ.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>Klicka <strong>"Explore Scenario with AI"</strong> för att låta Claude Opus 4.6 analysera scenariot i detalj — konsekvenser, andra- och tredje-ordningseffekter, och signaler att bevaka.</p>
+
+  <!-- ═══════════ 7. AI-ANALYS ═══════════ -->
+  <h2>7. AI-analys (Claude Opus 4.6)</h2>
+
+  <p>AI-panelen öppnas som en sidopanel från höger. Den drivs av <strong>Claude Opus 4.6</strong> — Anthropics mest kapabla modell — med specialiserad kunskap om svensk försvarsupphandling och Luleå-programmet.</p>
+
+  <h3>Så öppnar du AI-panelen</h3>
+  <ul>
+    <li>Klicka på <span class="tag blue">Improve Score</span>, <span class="tag green">Suggest Actions</span> eller <span class="tag purple">Challenge</span> på ett poängkort</li>
+    <li>Klicka <strong>"Deep Analysis"</strong> eller <strong>"Win Strategy"</strong> på aggregerade kategorier</li>
+    <li>Klicka <strong>"Explore with AI"</strong> på valfri nod</li>
+    <li>Klicka <strong>"Explore Scenario with AI"</strong> på scenariovyn</li>
+  </ul>
+
+  <h3>Snabbåtgärder</h3>
+  <p>AI-panelen visar <strong>kontextanpassade föreslagna frågor</strong> som runda knappar ovanför textfältet. Klicka på en för att omedelbart ställa frågan. Du kan även skriva egna frågor fritt i textfältet.</p>
+
+  <h3>Tips för effektiv AI-användning</h3>
+
+  <div class="cols">
+    <div>
+      <div class="box blue">
+        <div class="box-title">Var specifik</div>
+        "Hur kan Naval Group minska integrationsrisken för 9LV CMS på FDI-plattformen?" ger bättre svar än "Hur kan de förbättra sig?"
+      </div>
+    </div>
+    <div>
+      <div class="box green">
+        <div class="box-title">Utmana aktivt</div>
+        Använd "Challenge"-knappen för att stresstesta bedömningar. Be AI:n argumentera för både högre OCH lägre poäng.
+      </div>
+    </div>
+  </div>
+
+  <div class="cols">
+    <div>
+      <div class="box amber">
+        <div class="box-title">Följdfrågor</div>
+        AI:n minns konversationens kontext. Ställ följdfrågor för att gå djupare: "Utveckla punkt 3" eller "Vilka risker ser du med det förslaget?"
+      </div>
+    </div>
+    <div>
+      <div class="box">
+        <div class="box-title">Jämför perspektiv</div>
+        Öppna AI-panelen för samma kriterium från olika företags perspektiv för att se hur argumenten skiljer sig.
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ 8. ANVÄNDNINGSFALL ═══════════ -->
+  <div class="page-break"></div>
+  <h2>8. Guide för företagsrepresentanter</h2>
+
+  <p>Nedan beskrivs hur en representant från ett av de tävlande företagen kan använda verktyget strategiskt.</p>
+
+  <h3>A. Förstå er position</h3>
+  <ol class="steps">
+    <li>Gå till <strong>Företagsprofiler</strong> och välj ert företag. Studera totalpoängen och poäng per pelare.</li>
+    <li>Identifiera era <strong>tre starkaste</strong> och <strong>tre svagaste</strong> kriterier i poängtabellen.</li>
+    <li>Gå till <strong>Jämförelsevyn</strong> och se var ni leder (grön prick) respektive ligger efter.</li>
+  </ol>
+
+  <h3>B. Identifiera förbättringsmöjligheter</h3>
+  <ol class="steps">
+    <li>Navigera till era <strong>svagaste noder</strong> i beslutsträdet (röda/gula poäng).</li>
+    <li>Klicka <span class="tag blue">Improve Score</span> för att få AI-genererade förbättringsförslag.</li>
+    <li>Klicka <span class="tag green">Suggest Actions</span> för konkreta steg ni kan ta de närmaste 6 månaderna.</li>
+    <li>Fokusera på noder med <strong>hög vikt</strong> — en förbättring från 6 till 8 på en 5%-nod ger mer effekt än samma förbättring på en 1%-nod.</li>
+  </ol>
+
+  <div class="box amber">
+    <div class="box-title">Prioriteringsregel</div>
+    Påverkan = (poängförbättring) × (nodens vikt). Fokusera på högt viktade noder där ni har låg poäng — det är den snabbaste vägen att förbättra er totalpoäng.
+  </div>
+
+  <h3>C. Förstå era konkurrenter</h3>
+  <ol class="steps">
+    <li>Studera konkurrenternas profiler — deras <strong>styrkor</strong> visar var de kommer argumentera starkast mot FMV.</li>
+    <li>Deras <strong>svagheter</strong> är potentiella angreppspunkter i er egen positionering.</li>
+    <li>Använd AI:ns <strong>"Win Strategy"</strong> funktion på kategorinivå för att få strategiska rekommendationer.</li>
+  </ol>
+
+  <h3>D. Testa och utmana bedömningar</h3>
+  <ol class="steps">
+    <li>Använd <span class="tag purple">Challenge</span> på poäng ni anser vara felaktiga — AI:n presenterar argument åt båda håll.</li>
+    <li>Dokumentera era motargument och evidens för interna presentationer.</li>
+    <li>Testa era narrativ: Ställ frågan "Vad är det starkaste argumentet mot [ert företag] på denna punkt?" för att förbereda er för FMV:s kritiska granskning.</li>
+  </ol>
+
+  <h3>E. Scenarioplanering</h3>
+  <ol class="steps">
+    <li>Gå till <strong>Scenarion</strong> och utforska det scenario där ert företag vinner — vilka förutsättningar krävs?</li>
+    <li>Utforska scenarier där en konkurrent vinner — vad kan ni göra för att förhindra det?</li>
+    <li>Använd AI:n för att identifiera <strong>signaler att bevaka</strong> som indikerar vilken riktning beslutet tar.</li>
+  </ol>
+
+  <h3>F. Strategisk handlingsplan</h3>
+
+  <div class="box green">
+    <div class="box-title">Rekommenderat arbetsflöde</div>
+    <ol style="padding-left:16px;margin:6px 0 0;">
+      <li>Kartlägg er position (Profiler + Jämförelse) — 30 min</li>
+      <li>Prioritera 5 nyckelkriterier med störst påverkanspotential — 15 min</li>
+      <li>Kör AI-analys på varje nyckelkriterium (Improve + Actions) — 45 min</li>
+      <li>Stresstesta era antaganden (Challenge på 3–5 kritiska poäng) — 30 min</li>
+      <li>Sammanställ handlingsplan och narrativ — 30 min</li>
+    </ol>
+  </div>
+
+  <p style="margin-top:24px;" class="small">
+    <strong>Datakällor:</strong> Alla poäng och analyser baseras på öppet tillgängliga källor — FMV:s pressmeddelanden, Riksdagens propositioner, Försvarsmaktens budgetunderlag, svensk affärspress (SVT, Affärsvärlden), Reuters, leverantörernas offentliga kommunikation, och försvarsanalytiska publikationer. Verktyget ersätter inte professionell rådgivning.
+  </p>
+
+  <p class="small">
+    <strong>Sekretess:</strong> Applikationen körs lokalt. Inga data lagras externt. API-anrop till Anthropic innehåller enbart den aktuella frågeställningen och kontexten — inga personuppgifter eller klassificerad information bör matas in.
+  </p>
+
+</body>
+</html>
