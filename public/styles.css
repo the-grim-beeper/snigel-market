@@ -420,7 +420,36 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-bottom: 0;
+  cursor: pointer;
+}
+
+.score-card.expanded .score-card-header {
   margin-bottom: 12px;
+}
+
+/* Collapsible body */
+.score-card-body {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.3s ease, opacity 0.2s ease;
+}
+
+.score-card.expanded .score-card-body {
+  max-height: 500px;
+  opacity: 1;
+}
+
+/* Chevron rotation */
+.score-card-chevron {
+  color: var(--text-muted);
+  transition: transform 0.25s ease;
+  flex-shrink: 0;
+}
+
+.score-card.expanded .score-card-chevron {
+  transform: rotate(180deg);
 }
 
 .score-company-name {
@@ -1544,6 +1573,30 @@ body {
 
 .reset-btn:hover {
   background: rgba(239,68,68,0.2);
+}
+
+.delete-change-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: rgba(239,68,68,0.1);
+  border: 1px solid rgba(239,68,68,0.2);
+  color: var(--red);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  font-family: inherit;
+  transition: all 0.12s;
+}
+
+.delete-change-btn:hover {
+  background: rgba(239,68,68,0.25);
+  border-color: rgba(239,68,68,0.4);
 }
 
 /* ── Utility ── */
