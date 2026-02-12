@@ -1168,6 +1168,40 @@ function saveEdit() {
   renderScenarios();
 }
 
+// ── Inline Score History ──
+function renderInlineHistory(nodeId, companyKey) {
+  const entries = scoreChangeLog.filter(e => e.nodeId === nodeId && e.company === companyKey);
+  if (entries.length === 0) return '';
+
+  const rows = [...entries].reverse().map(entry => {
+    const date = new Date(entry.timestamp);
+    const timeStr = date.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    const delta = entry.newScore - entry.oldScore;
+    const deltaStr = delta > 0 ? `+${delta.toFixed(1)}` : delta.toFixed(1);
+    const deltaClass = delta > 0 ? 'history-up' : delta < 0 ? 'history-down' : '';
+
+    return `
+      <div class="inline-history-entry">
+        <div class="inline-history-top">
+          <span class="inline-history-scores">${entry.oldScore.toFixed(1)} → ${entry.newScore.toFixed(1)} <span class="${deltaClass}">(${deltaStr})</span></span>
+          <span class="inline-history-time">${timeStr}</span>
+        </div>
+        <div class="inline-history-motivation">${entry.motivation}</div>
+      </div>
+    `;
+  }).join('');
+
+  return `
+    <div class="inline-history">
+      <div class="inline-history-label">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>
+        Change History (${entries.length})
+      </div>
+      ${rows}
+    </div>
+  `;
+}
+
 // ── Change Log Rendering ──
 function renderChangeLog() {
   const container = document.getElementById('changelog-container');
@@ -1403,6 +1437,7 @@ function renderDetail(node, path) {
             <div class="score-bar-fill ${key}" style="width: ${data.score * 10}%"></div>
           </div>
           <div class="score-rationale">${data.rationale}</div>
+          ${renderInlineHistory(node.id, key)}
           <div class="score-actions">
             <button class="score-action-btn primary" onclick="openAI('improve', '${key}', '${node.id}')">Improve Score</button>
             <button class="score-action-btn" onclick="openAI('actions', '${key}', '${node.id}')">Suggest Actions</button>

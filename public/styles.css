@@ -1390,6 +1390,65 @@ body {
 .impact-up { color: var(--green); font-weight: 600; }
 .impact-down { color: var(--red); font-weight: 600; }
 
+/* ── Inline Score History ── */
+.inline-history {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
+}
+
+.inline-history-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.inline-history-entry {
+  padding: 6px 10px;
+  background: var(--bg);
+  border-radius: var(--radius);
+  margin-bottom: 6px;
+  border-left: 2px solid var(--border);
+}
+
+.inline-history-entry:last-child {
+  margin-bottom: 0;
+}
+
+.inline-history-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 3px;
+}
+
+.inline-history-scores {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.inline-history-time {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.inline-history-motivation {
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+.history-up { color: var(--green); }
+.history-down { color: var(--red); }
+
 .edit-modal-actions {
   display: flex;
   justify-content: flex-end;
