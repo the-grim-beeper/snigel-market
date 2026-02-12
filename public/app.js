@@ -1050,8 +1050,75 @@ function openEditModal(nodeId, companyKey) {
   document.getElementById('edit-rationale').value = data.rationale;
   document.getElementById('edit-motivation').value = '';
 
+  // Show initial impact preview
+  updateScorePreview(data.score);
+
   document.getElementById('edit-modal').classList.add('open');
   document.getElementById('edit-modal-overlay').classList.add('open');
+}
+
+function updateScorePreview(newValue) {
+  const preview = document.getElementById('edit-impact-preview');
+  document.getElementById('edit-score-value').textContent = newValue;
+
+  if (!editContext) { preview.innerHTML = ''; return; }
+
+  const { nodeId, companyKey, originalScore } = editContext;
+  const newScore = parseFloat(newValue);
+  const node = findNode(DECISION_TREE, nodeId);
+  if (!node) { preview.innerHTML = ''; return; }
+
+  // Temporarily swap the score to compute "after" aggregates
+  const savedScore = node.scores[companyKey].score;
+
+  // Compute current parent aggregate (with original score)
+  const parent = findParent(DECISION_TREE, nodeId);
+  const categoryNode = parent && parent.id !== 'root' ? parent : null;
+
+  // Current aggregates
+  const currentRoot = computeAggregateScores(DECISION_TREE);
+  const currentCategory = categoryNode ? computeAggregateScores(categoryNode) : null;
+
+  // Apply hypothetical score
+  node.scores[companyKey].score = newScore;
+  const newRoot = computeAggregateScores(DECISION_TREE);
+  const newCategory = categoryNode ? computeAggregateScores(categoryNode) : null;
+
+  // Restore original
+  node.scores[companyKey].score = savedScore;
+
+  let html = '<div class="impact-label">Impact Preview</div><div class="impact-rows">';
+
+  if (currentCategory && newCategory && categoryNode) {
+    const before = currentCategory[companyKey]?.toFixed(2) ?? '—';
+    const after = newCategory[companyKey]?.toFixed(2) ?? '—';
+    const delta = (newCategory[companyKey] - currentCategory[companyKey]);
+    const deltaStr = delta > 0 ? `+${delta.toFixed(2)}` : delta.toFixed(2);
+    const deltaClass = delta > 0 ? 'impact-up' : delta < 0 ? 'impact-down' : '';
+    html += `
+      <div class="impact-row">
+        <span class="impact-scope">${categoryNode.label}</span>
+        <span class="impact-values">${before} → ${after} <span class="${deltaClass}">(${deltaStr})</span></span>
+      </div>
+    `;
+  }
+
+  if (currentRoot && newRoot) {
+    const before = currentRoot[companyKey]?.toFixed(2) ?? '—';
+    const after = newRoot[companyKey]?.toFixed(2) ?? '—';
+    const delta = (newRoot[companyKey] - currentRoot[companyKey]);
+    const deltaStr = delta > 0 ? `+${delta.toFixed(2)}` : delta.toFixed(2);
+    const deltaClass = delta > 0 ? 'impact-up' : delta < 0 ? 'impact-down' : '';
+    html += `
+      <div class="impact-row">
+        <span class="impact-scope">Overall Score</span>
+        <span class="impact-values">${before} → ${after} <span class="${deltaClass}">(${deltaStr})</span></span>
+      </div>
+    `;
+  }
+
+  html += '</div>';
+  preview.innerHTML = html;
 }
 
 function closeEditModal() {
@@ -1618,6 +1685,17 @@ function findNode(tree, id) {
   if (tree.children) {
     for (const child of tree.children) {
       const found = findNode(child, id);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+function findParent(tree, id) {
+  if (tree.children) {
+    for (const child of tree.children) {
+      if (child.id === id) return tree;
+      const found = findParent(child, id);
       if (found) return found;
     }
   }

@@ -106,11 +106,12 @@
       <div class="edit-field">
         <label>Score</label>
         <div class="edit-score-row">
-          <input type="range" id="edit-score-slider" min="0" max="10" step="0.5" value="5" oninput="document.getElementById('edit-score-value').textContent=this.value">
+          <input type="range" id="edit-score-slider" min="0" max="10" step="0.5" value="5" oninput="updateScorePreview(this.value)">
           <span id="edit-score-value" class="edit-score-display">5</span>
           <span class="edit-score-max">/ 10</span>
         </div>
       </div>
+      <div id="edit-impact-preview" class="edit-impact-preview"></div>
       <div class="edit-field">
         <label>Updated Rationale</label>
         <textarea id="edit-rationale" rows="3" placeholder="Describe the reasoning behind this score..."></textarea>

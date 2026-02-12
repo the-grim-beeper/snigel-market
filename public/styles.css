@@ -1342,6 +1342,54 @@ body {
   color: var(--text-muted);
 }
 
+/* ── Impact Preview ── */
+.edit-impact-preview {
+  margin-bottom: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.edit-impact-preview:empty {
+  display: none;
+}
+
+.impact-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  padding: 8px 12px 4px;
+}
+
+.impact-rows {
+  padding: 0 12px 8px;
+}
+
+.impact-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  font-size: 13px;
+}
+
+.impact-scope {
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+.impact-values {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.impact-up { color: var(--green); font-weight: 600; }
+.impact-down { color: var(--red); font-weight: 600; }
+
 .edit-modal-actions {
   display: flex;
   justify-content: flex-end;
