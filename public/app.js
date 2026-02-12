@@ -2311,13 +2311,23 @@ async function fetchAIResponse() {
       })
     });
 
-    const data = await response.json();
     removeTypingIndicator();
+
+    if (!response.ok) {
+      const errText = await response.text();
+      let errMsg;
+      try { errMsg = JSON.parse(errText).error; } catch { errMsg = `Server error (${response.status})`; }
+      addMessage('assistant', `Error: ${errMsg}. Make sure you have set the ANTHROPIC_API_KEY environment variable.`);
+      isAILoading = false;
+      document.getElementById('send-btn').disabled = false;
+      return;
+    }
+
+    const data = await response.json();
 
     if (data.error) {
       addMessage('assistant', `Error: ${data.error}. Make sure you have set the ANTHROPIC_API_KEY environment variable.`);
     } else {
-      aiMessages.push({ role: 'assistant', content: data.content });
       addMessage('assistant', data.content);
     }
   } catch (err) {
