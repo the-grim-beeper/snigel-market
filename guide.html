@@ -354,7 +354,7 @@
       <strong>Syfte:</strong> Interaktiv beslutsmodellering med AI-stödd analys av upphandlingens alla dimensioner<br>
       <strong>Kandidater:</strong> Naval Group (FDI) &bull; Babcock/Saab (Arrowhead 120) &bull; Navantia (ALFA 4000)<br>
       <strong>AI-motor:</strong> Claude Opus 4.6 (Anthropic)<br>
-      <strong>Version:</strong> 1.0 &bull; Februari 2026
+      <strong>Version:</strong> 1.2 &bull; Februari 2026
     </div>
     <div class="cover-footer">
       <div class="cover-footer-item">
@@ -383,9 +383,10 @@
     <tr><td style="font-weight:600;">1. Snabbstart</td><td class="text-muted">Installation och uppstart på 2 minuter</td></tr>
     <tr><td style="font-weight:600;">2. Översikt</td><td class="text-muted">Verktygets fyra huvudvyer</td></tr>
     <tr><td style="font-weight:600;">3. Beslutsträd</td><td class="text-muted">Navigera och utforska 40+ beslutskriterier</td></tr>
+    <tr><td style="font-weight:600;">3b. Poängredigering</td><td class="text-muted">Redigera poäng, ändringshistorik och propagering</td></tr>
     <tr><td style="font-weight:600;">4. Företagsprofiler</td><td class="text-muted">Detaljerad analys per kandidat</td></tr>
     <tr><td style="font-weight:600;">5. Jämförelsevy</td><td class="text-muted">Sida-vid-sida poängjämförelse</td></tr>
-    <tr><td style="font-weight:600;">6. Scenarion</td><td class="text-muted">Fyra möjliga utfall att utforska</td></tr>
+    <tr><td style="font-weight:600;">6. Scenarion</td><td class="text-muted">Egna scenarioprojektioner och fyra fördefinierade utfall</td></tr>
     <tr><td style="font-weight:600;">7. AI-analys</td><td class="text-muted">Så använder du Claude Opus 4.6</td></tr>
     <tr><td style="font-weight:600;">8. Användningsfall</td><td class="text-muted">Guide för företagsrepresentanter</td></tr>
   </table>
@@ -450,7 +451,7 @@
     <div class="feature">
       <div class="feature-icon">📋</div>
       <h4>Scenarion</h4>
-      <p>Fyra tänkbara utfall (franskt, spanskt, brittiskt/svenskt, blandat) med konsekvensanalys och AI-utforskning.</p>
+      <p>Egna scenarioprojektioner med AI-driven poänganalys, plus fyra tänkbara utfall med konsekvensanalys och AI-utforskning.</p>
     </div>
   </div>
 
@@ -493,7 +494,7 @@
   <ol class="steps">
     <li><strong>Klicka på en nod</strong> i vänsterpanelen för att expandera/fälla ihop den och visa detaljer i högerpanelen</li>
     <li>Högerpanelen visar: brödsmulnavigering, nodbeskrivning, <strong>påverkansvektorer</strong> (färgkodade efter påverkansgrad) och <strong>poängkort per företag</strong></li>
-    <li>Varje poängkort visar: poäng (1–10), visuell stapel, motivering och <strong>tre åtgärdsknappar</strong></li>
+    <li>Varje poängkort visar företagsnamn, poäng (1–10) och en redigeringsknapp. <strong>Klicka på kortets rubrik</strong> för att expandera/fälla ihop detaljerna (stapel, motivering, historik och åtgärdsknappar). Kort är expanderade som standard.</li>
   </ol>
 
   <h3>Poängkortets knappar</h3>
@@ -527,6 +528,45 @@
     <li><span class="tag purple">Medium</span> — Märkbar påverkan, mindre avgörande</li>
     <li><span class="tag green">Låg</span> — Begränsad direkt påverkan</li>
   </ul>
+
+  <!-- ═══════════ 3b. POÄNGREDIGERING ═══════════ -->
+  <h2>3b. Poängredigering</h2>
+
+  <p>Alla poäng i beslutsträdet kan redigeras direkt. Ändringar sparas på servern och <strong>propagerar automatiskt</strong> till samtliga vyer — Jämförelse, Profiler och Scenarion.</p>
+
+  <h3>Redigera en poäng</h3>
+  <ol class="steps">
+    <li>Klicka på <strong>redigeringsikonen</strong> (pennan) i poängkortets rubrik. En modal öppnas.</li>
+    <li>Dra <strong>reglaget</strong> för att justera poängen (1.0–10.0). En konsekvensförhandsvisning visar hur ändringen påverkar kategori- och totalpoäng.</li>
+    <li>Ange valfri ny <strong>motivering</strong> (rationale) — befintlig text behålls om fältet lämnas tomt.</li>
+    <li>Skriv en obligatorisk <strong>ändringsmotivation</strong> som förklarar varför poängen justeras. Denna loggas i historiken.</li>
+    <li>Klicka <strong>Spara</strong>. Ändringen tillämpas omedelbart på alla vyer och sparas på servern.</li>
+  </ol>
+
+  <div class="box blue">
+    <div class="box-title">Automatisk propagering</div>
+    När en poäng redigeras räknas viktade genomsnitt om i realtid. Aggregerade poäng på kategorinoder, jämförelsetabellen, företagsprofiler och scenarion uppdateras omedelbart.
+  </div>
+
+  <h3>Ändringshistorik</h3>
+  <p>Varje poängkort visar sin <strong>ändringshistorik</strong> direkt under motiveringen (expandera kortet för att se den). Historiken visar:</p>
+  <ul>
+    <li>Gammal och ny poäng med delta (t.ex. <em>7.0 → 8.5 (+1.5)</em>)</li>
+    <li>Tidpunkt för ändringen</li>
+    <li>Motivationen som angavs vid redigeringstillfället</li>
+  </ul>
+  <p>En gul <span class="tag" style="background:#fef9c3;color:#92400e;">edited</span>-markering visas i poängkortets rubrik för redigerade poäng.</p>
+
+  <h3>Ta bort enskilda ändringar</h3>
+  <p>Klicka på <strong>×-knappen</strong> bredvid en historikpost för att radera den ändringen. Sidan laddas om och alla kvarvarande ändringar tillämpas på nytt. En fullständig ändringslogg finns även under fliken <strong>Ändringslogg</strong> i navigeringsfältet.</p>
+
+  <h3>Återställ alla ändringar</h3>
+  <p>Klicka <strong>"Återställ alla"</strong> i ändringsloggen för att radera samtliga redigeringar och återgå till originalpoängen.</p>
+
+  <div class="box amber">
+    <div class="box-title">Serverlagring</div>
+    Alla poängändringar sparas på servern (inte i webbläsarens localStorage). Data bevaras mellan sessioner och webbläsare så länge servern körs.
+  </div>
 
   <!-- ═══════════ 4. PROFILER ═══════════ -->
   <div class="page-break"></div>
@@ -596,7 +636,39 @@
   <div class="page-break"></div>
   <h2>6. Scenarion</h2>
 
-  <p>Fyra möjliga utfall baserade på öppen källanalys. Varje scenariokort visar:</p>
+  <p>Scenariovyn kombinerar <strong>egna scenarioprojektioner</strong> med fyra fördefinierade utfall baserade på öppen källanalys.</p>
+
+  <h3>Egen scenarioprojektion</h3>
+  <p>Högst upp i vyn finns ett inmatningsfält där du kan beskriva valfritt hypotetiskt scenario. AI:n (Claude Sonnet) analyserar hur scenariot påverkar poäng för alla 53 bladnoder och alla tre företag.</p>
+
+  <ol class="steps">
+    <li>Skriv en scenariobeskrivning i textfältet, t.ex. <em>"Sverige prioriterar besättningsstorlek som absolut viktigast"</em> eller <em>"Babcock/Saab demonstrerar Aster 30-integration på Arrowhead 120"</em>.</li>
+    <li>Klicka <strong>"Analyze Scenario"</strong>. En laddningsindikator visas medan AI:n analyserar.</li>
+    <li>Resultatpanelen visar en lista med föreslagna poängändringar. Varje rad visar:
+      <ul>
+        <li>Kriteriumnamn och sökväg i beslutsträdet</li>
+        <li>Företag och nuvarande poäng &rarr; föreslagen poäng</li>
+        <li>Konfidensnivå (<span class="tag green">high</span>, <span class="tag" style="background:#fef9c3;color:#92400e;">medium</span>, <span class="tag" style="background:#f1f5f9;color:#64748b;">low</span>)</li>
+        <li>Motivering från AI:n</li>
+      </ul>
+    </li>
+    <li><strong>Apply</strong> — tillämpa en enskild poängändring (sparas i ändringsloggen med prefix <em>[Scenario: ...]</em>).</li>
+    <li><strong>Apply All</strong> — tillämpa samtliga ej redan tillämpade förslag på en gång.</li>
+    <li><strong>Clear</strong> — rensa resultaten och nollställ inmatningen.</li>
+  </ol>
+
+  <div class="box blue">
+    <div class="box-title">Selektiv tillämpning</div>
+    Du behöver inte tillämpa alla förslag. Granska varje rad och tillämpa bara de ändringar du bedömer som rimliga. Tillämpade ändringar propagerar omedelbart till alla vyer (Beslutsträd, Profiler, Jämförelse).
+  </div>
+
+  <div class="box amber">
+    <div class="box-title">AI-modell</div>
+    Scenarioprojektionen använder Claude Sonnet (inte Opus) för bästa balans mellan hastighet och kvalitet vid analys av alla 53 kriterier. Kräver en giltig API-nyckel.
+  </div>
+
+  <h3>Fördefinierade scenarion</h3>
+  <p>Under inmatningsfältet visas fyra scenariokort baserade på öppen källanalys:</p>
 
   <table>
     <thead>
@@ -716,6 +788,7 @@
   <ol class="steps">
     <li>Gå till <strong>Scenarion</strong> och utforska det scenario där ert företag vinner — vilka förutsättningar krävs?</li>
     <li>Utforska scenarier där en konkurrent vinner — vad kan ni göra för att förhindra det?</li>
+    <li>Använd <strong>egen scenarioprojektion</strong> för att testa specifika hypoteser, t.ex. <em>"FMV viktar bemanning dubbelt"</em> eller <em>"Navantia ingår partnerskap med Saab för CMS-integration"</em>. Granska AI:ns förslag och tillämpa selektivt.</li>
     <li>Använd AI:n för att identifiera <strong>signaler att bevaka</strong> som indikerar vilken riktning beslutet tar.</li>
   </ol>
 
@@ -737,7 +810,7 @@
   </p>
 
   <p class="small">
-    <strong>Sekretess:</strong> Applikationen körs lokalt. Inga data lagras externt. API-anrop till Anthropic innehåller enbart den aktuella frågeställningen och kontexten — inga personuppgifter eller klassificerad information bör matas in.
+    <strong>Sekretess:</strong> Applikationen körs lokalt. Poängändringar sparas på servern i minnet (ej extern databas). API-anrop till Anthropic innehåller enbart den aktuella frågeställningen och kontexten — inga personuppgifter eller klassificerad information bör matas in.
   </p>
 
 </body>

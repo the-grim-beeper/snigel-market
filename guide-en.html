@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>User Guide — Luleå-class Decision Model</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    @page {
+      size: A4;
+      margin: 20mm 22mm 20mm 22mm;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      font-size: 9.5pt;
+      line-height: 1.55;
+      color: #1a1a2e;
+      background: white;
+    }
+
+    /* ── Cover ── */
+    .cover {
+      page-break-after: always;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 40px 0;
+    }
+
+    .cover-badge {
+      display: inline-block;
+      background: #eef2ff;
+      color: #4338ca;
+      font-size: 8pt;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+    }
+
+    .cover h1 {
+      font-size: 28pt;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      color: #0f172a;
+      margin-bottom: 8px;
+    }
+
+    .cover h1 span {
+      color: #3b82f6;
+    }
+
+    .cover-subtitle {
+      font-size: 13pt;
+      color: #64748b;
+      font-weight: 400;
+      margin-bottom: 32px;
+    }
+
+    .cover-line {
+      width: 60px;
+      height: 3px;
+      background: linear-gradient(90deg, #3b82f6, #06b6d4);
+      border-radius: 2px;
+      margin-bottom: 24px;
+    }
+
+    .cover-meta {
+      font-size: 8.5pt;
+      color: #94a3b8;
+      line-height: 1.8;
+    }
+
+    .cover-meta strong {
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    .cover-footer {
+      margin-top: auto;
+      padding-top: 40px;
+      display: flex;
+      gap: 24px;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 16px;
+    }
+
+    .cover-footer-item {
+      font-size: 8pt;
+      color: #94a3b8;
+    }
+
+    .cover-footer-item strong {
+      display: block;
+      color: #475569;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    /* ── Section Headers ── */
+    h2 {
+      font-size: 16pt;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #0f172a;
+      margin-bottom: 6px;
+      margin-top: 28px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #3b82f6;
+      display: inline-block;
+    }
+
+    h2:first-child { margin-top: 0; }
+
+    h3 {
+      font-size: 11pt;
+      font-weight: 700;
+      color: #1e293b;
+      margin-top: 18px;
+      margin-bottom: 6px;
+    }
+
+    h4 {
+      font-size: 9.5pt;
+      font-weight: 700;
+      color: #334155;
+      margin-top: 12px;
+      margin-bottom: 4px;
+    }
+
+    p {
+      margin-bottom: 8px;
+      color: #334155;
+    }
+
+    /* ── Numbered Steps ── */
+    .steps {
+      counter-reset: step;
+      list-style: none;
+      padding: 0;
+      margin: 8px 0 12px;
+    }
+
+    .steps li {
+      counter-increment: step;
+      padding: 6px 0 6px 32px;
+      position: relative;
+      margin-bottom: 4px;
+    }
+
+    .steps li::before {
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: 5px;
+      width: 20px;
+      height: 20px;
+      background: #3b82f6;
+      color: white;
+      font-size: 8pt;
+      font-weight: 700;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      text-align: center;
+    }
+
+    /* ── Info Boxes ── */
+    .box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 10px 14px;
+      margin: 10px 0;
+      font-size: 9pt;
+    }
+
+    .box.blue {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+    }
+
+    .box.green {
+      background: #f0fdf4;
+      border-color: #bbf7d0;
+    }
+
+    .box.amber {
+      background: #fffbeb;
+      border-color: #fde68a;
+    }
+
+    .box-title {
+      font-weight: 700;
+      font-size: 9pt;
+      margin-bottom: 3px;
+      color: #0f172a;
+    }
+
+    .box.blue .box-title { color: #1d4ed8; }
+    .box.green .box-title { color: #166534; }
+    .box.amber .box-title { color: #92400e; }
+
+    /* ── Tables ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0;
+      font-size: 8.5pt;
+    }
+
+    th {
+      text-align: left;
+      font-weight: 700;
+      font-size: 7.5pt;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #64748b;
+      padding: 6px 8px;
+      border-bottom: 2px solid #e2e8f0;
+      background: #f8fafc;
+    }
+
+    td {
+      padding: 6px 8px;
+      border-bottom: 1px solid #f1f5f9;
+      vertical-align: top;
+    }
+
+    tr:hover { background: #f8fafc; }
+
+    /* ── Key Badges ── */
+    .key {
+      display: inline-block;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 3px;
+      padding: 1px 6px;
+      font-size: 8pt;
+      font-weight: 600;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      color: #475569;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 7.5pt;
+      font-weight: 600;
+    }
+
+    .tag.blue { background: #dbeafe; color: #1e40af; }
+    .tag.green { background: #dcfce7; color: #166534; }
+    .tag.red { background: #fee2e2; color: #991b1b; }
+    .tag.purple { background: #f3e8ff; color: #6b21a8; }
+
+    /* ── Columns ── */
+    .cols {
+      display: flex;
+      gap: 16px;
+      margin: 10px 0;
+    }
+
+    .cols > div {
+      flex: 1;
+    }
+
+    /* ── Feature Grid ── */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 10px 0;
+    }
+
+    .feature {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 10px 12px;
+    }
+
+    .feature-icon {
+      font-size: 14pt;
+      margin-bottom: 4px;
+    }
+
+    .feature h4 {
+      margin-top: 0;
+      font-size: 9pt;
+    }
+
+    .feature p {
+      font-size: 8.5pt;
+      color: #64748b;
+      margin-bottom: 0;
+    }
+
+    /* ── Code ── */
+    code {
+      background: #1e293b;
+      color: #e2e8f0;
+      padding: 6px 12px;
+      border-radius: 4px;
+      display: block;
+      font-size: 8.5pt;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      margin: 6px 0;
+      line-height: 1.6;
+    }
+
+    /* ── Page Breaks ── */
+    .page-break {
+      page-break-before: always;
+    }
+
+    /* ── Bullet lists ── */
+    ul {
+      padding-left: 16px;
+      margin: 6px 0 10px;
+    }
+
+    ul li {
+      margin-bottom: 3px;
+    }
+
+    /* ── Small text ── */
+    .small {
+      font-size: 8pt;
+      color: #94a3b8;
+    }
+
+    .text-muted { color: #64748b; }
+  </style>
+</head>
+<body>
+
+  <!-- ═══════════ COVER ═══════════ -->
+  <div class="cover">
+    <div class="cover-badge">Confidential User Guide</div>
+    <h1>Luleå-class<br><span>Decision Model</span></h1>
+    <p class="cover-subtitle">Tool for analysing Sweden's procurement of new surface combatants</p>
+    <div class="cover-line"></div>
+    <div class="cover-meta">
+      <strong>Purpose:</strong> Interactive decision modelling with AI-assisted analysis of all procurement dimensions<br>
+      <strong>Candidates:</strong> Naval Group (FDI) &bull; Babcock/Saab (Arrowhead 120) &bull; Navantia (ALFA 4000)<br>
+      <strong>AI engine:</strong> Claude Opus 4.6 (Anthropic)<br>
+      <strong>Version:</strong> 1.2 &bull; February 2026
+    </div>
+    <div class="cover-footer">
+      <div class="cover-footer-item">
+        <strong>Programme value</strong>
+        SEK 40–60 billion
+      </div>
+      <div class="cover-footer-item">
+        <strong>Number of vessels</strong>
+        4 Luleå-class frigates
+      </div>
+      <div class="cover-footer-item">
+        <strong>Timeline</strong>
+        Contract H1 2026, delivery 2030/2035
+      </div>
+      <div class="cover-footer-item">
+        <strong>Customer</strong>
+        FMV / Swedish Armed Forces
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ CONTENTS ═══════════ -->
+  <h2>Contents</h2>
+
+  <table>
+    <tr><td style="font-weight:600;">1. Quick Start</td><td class="text-muted">Installation and setup in 2 minutes</td></tr>
+    <tr><td style="font-weight:600;">2. Overview</td><td class="text-muted">The tool's four main views</td></tr>
+    <tr><td style="font-weight:600;">3. Decision Tree</td><td class="text-muted">Navigate and explore 40+ evaluation criteria</td></tr>
+    <tr><td style="font-weight:600;">3b. Score Editing</td><td class="text-muted">Edit scores, change history and propagation</td></tr>
+    <tr><td style="font-weight:600;">4. Company Profiles</td><td class="text-muted">Detailed analysis per candidate</td></tr>
+    <tr><td style="font-weight:600;">5. Comparison View</td><td class="text-muted">Side-by-side score comparison</td></tr>
+    <tr><td style="font-weight:600;">6. Scenarios</td><td class="text-muted">Custom scenario projections and four predefined outcomes</td></tr>
+    <tr><td style="font-weight:600;">7. AI Analysis</td><td class="text-muted">How to use Claude Opus 4.6</td></tr>
+    <tr><td style="font-weight:600;">8. Use Cases</td><td class="text-muted">Guide for company representatives</td></tr>
+  </table>
+
+  <!-- ═══════════ 1. QUICK START ═══════════ -->
+  <div class="page-break"></div>
+  <h2>1. Quick Start</h2>
+
+  <p>The tool runs as a local web application on your computer. No data is sent to external servers apart from API calls to Anthropic for the AI analysis.</p>
+
+  <h3>Requirements</h3>
+  <ul>
+    <li><strong>Node.js</strong> (version 18 or later)</li>
+    <li><strong>Anthropic API key</strong> for AI features (optional but recommended)</li>
+    <li>Modern web browser (Chrome, Safari, Firefox)</li>
+  </ul>
+
+  <h3>Installation</h3>
+  <ol class="steps">
+    <li>Open <strong>Terminal</strong> on your Mac</li>
+    <li>Navigate to the project folder:
+      <code>cd ~/Desktop/Nav/lulea-decision-tool</code>
+    </li>
+    <li>Install dependencies (only needed the first time):
+      <code>npm install</code>
+    </li>
+    <li>Enter your API key — open <span class="key">server.js</span> and paste the key on line 6:
+      <code>const API_KEY = 'sk-ant-your-key-here';</code>
+    </li>
+    <li>Start the server:
+      <code>node server.js</code>
+    </li>
+    <li>Open <strong>http://localhost:8080</strong> in your browser</li>
+  </ol>
+
+  <div class="box blue">
+    <div class="box-title">Tip</div>
+    The tool works without an API key — the decision tree, scores, profiles and comparisons are fully available. However, the AI chat requires a valid key.
+  </div>
+
+  <!-- ═══════════ 2. OVERVIEW ═══════════ -->
+  <h2>2. Overview</h2>
+
+  <p>The application has <strong>four main views</strong> accessible via the navigation bar at the top:</p>
+
+  <div class="feature-grid">
+    <div class="feature">
+      <div class="feature-icon">🌳</div>
+      <h4>Decision Tree</h4>
+      <p>Expandable/collapsible tree with all evaluation criteria, weights, scores per company, influence vectors and AI analysis.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">👥</div>
+      <h4>Company Profiles</h4>
+      <p>In-depth profiles for Naval Group, Babcock/Saab and Navantia with specifications, strengths/weaknesses and full score breakdown.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">📊</div>
+      <h4>Comparison View</h4>
+      <p>Side-by-side comparison table with scores for all three candidates. A green dot marks the leader per category.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">📋</div>
+      <h4>Scenarios</h4>
+      <p>Custom scenario projections with AI-powered score analysis, plus four predefined outcomes with consequence analysis and AI exploration.</p>
+    </div>
+  </div>
+
+  <!-- ═══════════ 3. DECISION TREE ═══════════ -->
+  <div class="page-break"></div>
+  <h2>3. Decision Tree</h2>
+
+  <p>The decision tree is the core of the tool. It models the entire procurement decision in a hierarchical structure with <strong>four evaluation pillars</strong> and over 40 detailed nodes.</p>
+
+  <h3>Evaluation pillars and weights</h3>
+  <table>
+    <thead>
+      <tr><th>Pillar</th><th>Weight</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Operational Capability</strong></td>
+        <td><span class="tag blue">35%</span></td>
+        <td>Air defence/IAMD, anti-submarine warfare, surface strike, naval command, endurance, future-proofing</td>
+      </tr>
+      <tr>
+        <td><strong>Delivery &amp; Schedule Risk</strong></td>
+        <td><span class="tag blue">30%</span></td>
+        <td>Design maturity, schedule credibility, integration risk, programme management</td>
+      </tr>
+      <tr>
+        <td><strong>Life-cycle Cost</strong></td>
+        <td><span class="tag blue">20%</span></td>
+        <td>Acquisition cost, through-life maintenance, manning &amp; training</td>
+      </tr>
+      <tr>
+        <td><strong>Industry &amp; Supply Security</strong></td>
+        <td><span class="tag blue">15%</span></td>
+        <td>Swedish industrial participation, sovereignty, strategic partnership value</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Navigation</h3>
+  <ol class="steps">
+    <li><strong>Click a node</strong> in the left panel to expand/collapse it and display details in the right panel</li>
+    <li>The right panel shows: breadcrumb navigation, node description, <strong>influence vectors</strong> (colour-coded by impact level) and <strong>score cards per company</strong></li>
+    <li>Each score card shows the company name, score (1–10) and an edit button. <strong>Click the card header</strong> to expand/collapse details (bar, rationale, history and action buttons). Cards are expanded by default.</li>
+  </ol>
+
+  <h3>Score card buttons</h3>
+  <table>
+    <thead>
+      <tr><th>Button</th><th>Function</th><th>Use</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="tag blue">Improve Score</span></td>
+        <td>AI suggests concrete actions to raise the score</td>
+        <td>Identify improvement areas and action plans</td>
+      </tr>
+      <tr>
+        <td><span class="tag green">Suggest Actions</span></td>
+        <td>AI recommends concrete steps the company can take</td>
+        <td>Diplomacy, technology demonstration, partnerships</td>
+      </tr>
+      <tr>
+        <td><span class="tag purple">Challenge</span></td>
+        <td>AI debates the score with arguments for and against</td>
+        <td>Stress-test the assessment and question assumptions</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Influence vectors</h3>
+  <p>Each node can have associated <strong>influence vectors</strong> — factors that affect the outcome. These are displayed as colour-coded tags:</p>
+  <ul>
+    <li><span class="tag red">High</span> — Strong, documented impact on the decision</li>
+    <li><span class="tag purple">Medium</span> — Noticeable impact, less decisive</li>
+    <li><span class="tag green">Low</span> — Limited direct impact</li>
+  </ul>
+
+  <!-- ═══════════ 3b. SCORE EDITING ═══════════ -->
+  <h2>3b. Score Editing</h2>
+
+  <p>All scores in the decision tree can be edited directly. Changes are saved to the server and <strong>propagate automatically</strong> to all views — Comparison, Profiles and Scenarios.</p>
+
+  <h3>Editing a score</h3>
+  <ol class="steps">
+    <li>Click the <strong>edit icon</strong> (pencil) in the score card header. A modal opens.</li>
+    <li>Drag the <strong>slider</strong> to adjust the score (1.0–10.0). An impact preview shows how the change affects category and overall scores.</li>
+    <li>Optionally enter a new <strong>rationale</strong> — existing text is kept if the field is left empty.</li>
+    <li>Enter a mandatory <strong>change motivation</strong> explaining why the score is being adjusted. This is logged in the history.</li>
+    <li>Click <strong>Save</strong>. The change is applied immediately across all views and persisted on the server.</li>
+  </ol>
+
+  <div class="box blue">
+    <div class="box-title">Automatic propagation</div>
+    When a score is edited, weighted averages are recalculated in real time. Aggregate scores on category nodes, the comparison table, company profiles and scenarios all update immediately.
+  </div>
+
+  <h3>Change history</h3>
+  <p>Each score card displays its <strong>change history</strong> directly below the rationale (expand the card to see it). The history shows:</p>
+  <ul>
+    <li>Old and new score with delta (e.g. <em>7.0 → 8.5 (+1.5)</em>)</li>
+    <li>Timestamp of the change</li>
+    <li>The motivation provided at the time of the edit</li>
+  </ul>
+  <p>A yellow <span class="tag" style="background:#fef9c3;color:#92400e;">edited</span> badge appears in the score card header for scores that have been modified.</p>
+
+  <h3>Deleting individual changes</h3>
+  <p>Click the <strong>&times; button</strong> next to a history entry to delete that change. The page reloads and all remaining changes are re-applied. A full change log is also available under the <strong>Change Log</strong> tab in the navigation bar.</p>
+
+  <h3>Reset all changes</h3>
+  <p>Click <strong>"Reset All"</strong> in the change log to delete all edits and revert to the original scores.</p>
+
+  <div class="box amber">
+    <div class="box-title">Server storage</div>
+    All score changes are saved on the server (not in the browser's localStorage). Data is preserved between sessions and browsers as long as the server is running.
+  </div>
+
+  <!-- ═══════════ 4. PROFILES ═══════════ -->
+  <div class="page-break"></div>
+  <h2>4. Company Profiles</h2>
+
+  <p>The profile view gives a complete picture of each candidate's position. Select a company in the left panel.</p>
+
+  <h3>Profile sections</h3>
+
+  <h4>Overview card</h4>
+  <p>Shows company name, platform, country of origin, <strong>overall score</strong> (weighted average) and score per evaluation pillar.</p>
+
+  <h4>Platform specifications</h4>
+  <p>Technical data: displacement, length, radar, VLS cells, crew, armament, shipyard, etc.</p>
+
+  <h4>Strengths &amp; Weaknesses</h4>
+  <p>Summary based on open sources — green-highlighted strengths and red-highlighted risks/weaknesses.</p>
+
+  <h4>Detailed score breakdown</h4>
+  <p>Table with all criteria, weights and individual scores. <strong>Click a row</strong> to navigate directly to that node in the decision tree.</p>
+
+  <h3>Candidate overview</h3>
+  <table>
+    <thead>
+      <tr><th>Candidate</th><th>Platform</th><th>Strongest at</th><th>Weakest at</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong style="color:#2563eb;">Naval Group</strong></td>
+        <td>FDI frigate</td>
+        <td>Design maturity, air defence, delivery credibility</td>
+        <td>Manning requirements, Swedish system integration</td>
+      </tr>
+      <tr>
+        <td><strong style="color:#059669;">Babcock/Saab</strong></td>
+        <td>Arrowhead 120</td>
+        <td>Swedish sovereignty, low manning, 9LV CMS</td>
+        <td>Design maturity (no T31 delivered), schedule risk</td>
+      </tr>
+      <tr>
+        <td><strong style="color:#dc2626;">Navantia</strong></td>
+        <td>ALFA 4000</td>
+        <td>Cost competitiveness, flexible industrial model, training</td>
+        <td>Concept-level design, least growth margin, weakest in Arctic</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ═══════════ 5. COMPARISON VIEW ═══════════ -->
+  <h2>5. Comparison View</h2>
+
+  <p>The comparison view displays a <strong>complete table</strong> with all three candidates' scores side by side:</p>
+
+  <ul>
+    <li><strong>Green dot</strong> (●) marks the leading candidate per criterion</li>
+    <li>Scores are <strong>colour-coded</strong>: green (≥8), yellow (6–7.9), red (&lt;6)</li>
+    <li>Category rows show weighted averages</li>
+    <li><strong>Click a row</strong> to navigate directly to that node in the decision tree</li>
+  </ul>
+
+  <div class="box green">
+    <div class="box-title">Quick interpretation</div>
+    Look for patterns: Where does a candidate have consistently green scores? Where are there red scores that could be decisive? The comparison view gives the fastest overview of the competitive landscape.
+  </div>
+
+  <!-- ═══════════ 6. SCENARIOS ═══════════ -->
+  <div class="page-break"></div>
+  <h2>6. Scenarios</h2>
+
+  <p>The scenarios view combines <strong>custom scenario projections</strong> with four predefined outcomes based on open-source analysis.</p>
+
+  <h3>Custom scenario projection</h3>
+  <p>At the top of the view is an input area where you can describe any hypothetical scenario. The AI (Claude Sonnet) analyses how the scenario would change scores across all 53 leaf criteria and all three companies.</p>
+
+  <ol class="steps">
+    <li>Type a scenario description in the text field, e.g. <em>"Sweden decides crew size is the absolute top priority"</em> or <em>"Babcock/Saab demonstrates Aster 30 integration on Arrowhead 120"</em>.</li>
+    <li>Click <strong>"Analyze Scenario"</strong>. A loading indicator appears while the AI analyses.</li>
+    <li>The results panel shows a list of suggested score changes. Each row displays:
+      <ul>
+        <li>Criterion name and path in the decision tree</li>
+        <li>Company and current score &rarr; suggested score</li>
+        <li>Confidence level (<span class="tag green">high</span>, <span class="tag" style="background:#fef9c3;color:#92400e;">medium</span>, <span class="tag" style="background:#f1f5f9;color:#64748b;">low</span>)</li>
+        <li>Rationale from the AI</li>
+      </ul>
+    </li>
+    <li><strong>Apply</strong> — apply an individual score change (saved in the change log with prefix <em>[Scenario: ...]</em>).</li>
+    <li><strong>Apply All</strong> — apply all not-yet-applied suggestions at once.</li>
+    <li><strong>Clear</strong> — clear the results and reset the input.</li>
+  </ol>
+
+  <div class="box blue">
+    <div class="box-title">Selective application</div>
+    You do not need to apply all suggestions. Review each row and apply only the changes you judge to be reasonable. Applied changes propagate immediately to all views (Decision Tree, Profiles, Comparison).
+  </div>
+
+  <div class="box amber">
+    <div class="box-title">AI model</div>
+    The scenario projection uses Claude Sonnet (not Opus) for the best balance of speed and quality when analysing all 53 criteria. Requires a valid API key.
+  </div>
+
+  <h3>Predefined scenarios</h3>
+  <p>Below the input area, four scenario cards based on open-source analysis are displayed:</p>
+
+  <table>
+    <thead>
+      <tr><th>Scenario</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="tag blue">A — France/FDI</span></td>
+        <td>Maximises air defence capability. Strengthens bilateral ties via the GlobalEye connection. Risk: Swedish system integration and export controls.</td>
+      </tr>
+      <tr>
+        <td><span class="tag red">B — Spain/ALFA 4000</span></td>
+        <td>Tailored to Swedish needs with NATO focus and phased delivery with trained crews. Risk: new design, smallest platform.</td>
+      </tr>
+      <tr>
+        <td><span class="tag green">C — UK-Sweden/AH-120</span></td>
+        <td>Strongest for Swedish sovereignty and Nordic/British defence cooperation. Lowest manning. Risk: AH-120 not a finished design, T31 not yet delivered.</td>
+      </tr>
+      <tr>
+        <td><span class="tag purple">D — Mixed procurement</span></td>
+        <td>Two "fast" vessels + option on later units. Hypothetical — no official sources support this alternative.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>Click <strong>"Explore Scenario with AI"</strong> to let Claude Opus 4.6 analyse the scenario in detail — consequences, second- and third-order effects, and signals to watch.</p>
+
+  <!-- ═══════════ 7. AI ANALYSIS ═══════════ -->
+  <h2>7. AI Analysis (Claude Opus 4.6)</h2>
+
+  <p>The AI panel opens as a side panel from the right. It is powered by <strong>Claude Opus 4.6</strong> — Anthropic's most capable model — with specialised knowledge of Swedish defence procurement and the Luleå programme.</p>
+
+  <h3>Opening the AI panel</h3>
+  <ul>
+    <li>Click <span class="tag blue">Improve Score</span>, <span class="tag green">Suggest Actions</span> or <span class="tag purple">Challenge</span> on a score card</li>
+    <li>Click <strong>"Deep Analysis"</strong> or <strong>"Win Strategy"</strong> on aggregate categories</li>
+    <li>Click <strong>"Explore with AI"</strong> on any node</li>
+    <li>Click <strong>"Explore Scenario with AI"</strong> on the scenarios view</li>
+  </ul>
+
+  <h3>Quick actions</h3>
+  <p>The AI panel shows <strong>context-adapted suggested questions</strong> as round buttons above the text field. Click one to immediately submit the question. You can also type your own questions freely in the text field.</p>
+
+  <h3>Tips for effective AI usage</h3>
+
+  <div class="cols">
+    <div>
+      <div class="box blue">
+        <div class="box-title">Be specific</div>
+        "How can Naval Group reduce the integration risk for 9LV CMS on the FDI platform?" yields better answers than "How can they improve?"
+      </div>
+    </div>
+    <div>
+      <div class="box green">
+        <div class="box-title">Challenge actively</div>
+        Use the "Challenge" button to stress-test assessments. Ask the AI to argue for both higher AND lower scores.
+      </div>
+    </div>
+  </div>
+
+  <div class="cols">
+    <div>
+      <div class="box amber">
+        <div class="box-title">Follow-up questions</div>
+        The AI remembers the conversation context. Ask follow-up questions to go deeper: "Elaborate on point 3" or "What risks do you see with that proposal?"
+      </div>
+    </div>
+    <div>
+      <div class="box">
+        <div class="box-title">Compare perspectives</div>
+        Open the AI panel for the same criterion from different companies' perspectives to see how the arguments differ.
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ 8. USE CASES ═══════════ -->
+  <div class="page-break"></div>
+  <h2>8. Guide for Company Representatives</h2>
+
+  <p>Below is how a representative from one of the competing companies can use the tool strategically.</p>
+
+  <h3>A. Understand your position</h3>
+  <ol class="steps">
+    <li>Go to <strong>Company Profiles</strong> and select your company. Study the overall score and score per pillar.</li>
+    <li>Identify your <strong>three strongest</strong> and <strong>three weakest</strong> criteria in the score table.</li>
+    <li>Go to the <strong>Comparison View</strong> and see where you lead (green dot) vs. where you trail.</li>
+  </ol>
+
+  <h3>B. Identify improvement opportunities</h3>
+  <ol class="steps">
+    <li>Navigate to your <strong>weakest nodes</strong> in the decision tree (red/yellow scores).</li>
+    <li>Click <span class="tag blue">Improve Score</span> to get AI-generated improvement suggestions.</li>
+    <li>Click <span class="tag green">Suggest Actions</span> for concrete steps you can take in the next 6 months.</li>
+    <li>Focus on nodes with <strong>high weight</strong> — an improvement from 6 to 8 on a 5%-node has more impact than the same improvement on a 1%-node.</li>
+  </ol>
+
+  <div class="box amber">
+    <div class="box-title">Prioritisation rule</div>
+    Impact = (score improvement) &times; (node weight). Focus on highly weighted nodes where you score low — that is the fastest way to improve your overall score.
+  </div>
+
+  <h3>C. Understand your competitors</h3>
+  <ol class="steps">
+    <li>Study your competitors' profiles — their <strong>strengths</strong> show where they will argue most forcefully to FMV.</li>
+    <li>Their <strong>weaknesses</strong> are potential attack points in your own positioning.</li>
+    <li>Use the AI's <strong>"Win Strategy"</strong> function at category level to get strategic recommendations.</li>
+  </ol>
+
+  <h3>D. Test and challenge assessments</h3>
+  <ol class="steps">
+    <li>Use <span class="tag purple">Challenge</span> on scores you believe are incorrect — the AI presents arguments both ways.</li>
+    <li>Document your counter-arguments and evidence for internal presentations.</li>
+    <li>Test your narratives: Ask "What is the strongest argument against [your company] on this point?" to prepare for FMV's critical review.</li>
+  </ol>
+
+  <h3>E. Scenario planning</h3>
+  <ol class="steps">
+    <li>Go to <strong>Scenarios</strong> and explore the scenario where your company wins — what conditions are required?</li>
+    <li>Explore scenarios where a competitor wins — what can you do to prevent it?</li>
+    <li>Use the <strong>custom scenario projection</strong> to test specific hypotheses, e.g. <em>"FMV doubles the weight on manning"</em> or <em>"Navantia partners with Saab for CMS integration"</em>. Review the AI's suggestions and apply selectively.</li>
+    <li>Use the AI to identify <strong>signals to watch</strong> that indicate which direction the decision is heading.</li>
+  </ol>
+
+  <h3>F. Strategic action plan</h3>
+
+  <div class="box green">
+    <div class="box-title">Recommended workflow</div>
+    <ol style="padding-left:16px;margin:6px 0 0;">
+      <li>Map your position (Profiles + Comparison) — 30 min</li>
+      <li>Prioritise 5 key criteria with the greatest impact potential — 15 min</li>
+      <li>Run AI analysis on each key criterion (Improve + Actions) — 45 min</li>
+      <li>Stress-test your assumptions (Challenge on 3–5 critical scores) — 30 min</li>
+      <li>Compile action plan and narrative — 30 min</li>
+    </ol>
+  </div>
+
+  <p style="margin-top:24px;" class="small">
+    <strong>Data sources:</strong> All scores and analyses are based on publicly available sources — FMV press releases, Swedish Parliament propositions, Swedish Armed Forces budget submissions, Swedish business press (SVT, Affärsvärlden), Reuters, suppliers' public communications, and defence analytical publications. The tool does not replace professional advice.
+  </p>
+
+  <p class="small">
+    <strong>Privacy:</strong> The application runs locally. Score changes are saved on the server in memory (no external database). API calls to Anthropic contain only the current query and context — no personal data or classified information should be entered.
+  </p>
+
+</body>
+</html>
