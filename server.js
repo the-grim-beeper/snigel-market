@@ -6,7 +6,7 @@ const path = require('path');
 const fs = require('fs');
 
 // ── Persistence paths ──
-const DATA_DIR = path.join(__dirname, 'data');
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 const DATA_FILE = path.join(DATA_DIR, 'changes.json');
 const DOCS_FILE = path.join(DATA_DIR, 'documents.json');
