@@ -306,6 +306,68 @@ app.delete('/api/documents/:id', (req, res) => {
   res.json({ documents: docs, changes: data });
 });
 
+// ── Scenario Analysis endpoint ──
+app.post('/api/scenarios/analyze', async (req, res) => {
+  try {
+    const { scenario, leafNodes } = req.body;
+    if (!scenario || !leafNodes || !leafNodes.length) {
+      return res.status(400).json({ error: 'scenario and leafNodes array required' });
+    }
+
+    const criteriaJson = JSON.stringify(leafNodes, null, 2);
+
+    const analysisPrompt = `You are analyzing a hypothetical scenario for the Swedish Luleå-class frigate procurement.
+
+<scenario>
+${scenario}
+</scenario>
+
+Below are the 53 leaf-level decision criteria with current scores.
+
+<criteria>
+${criteriaJson}
+</criteria>
+
+Companies: Naval Group (naval-group), Babcock/Saab (babcock-saab), Navantia (navantia)
+
+Given this scenario, suggest how scores would change. Respond with ONLY a JSON array:
+[{
+  "nodeId": "...",
+  "company": "...",
+  "suggestedScore": 9.5,
+  "rationale": "Brief justification",
+  "confidence": "high|medium|low"
+}]
+
+Only include nodes/companies where the scenario meaningfully affects the score.
+Do not repeat unchanged scores.`;
+
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-5-20250929',
+      max_tokens: 8192,
+      messages: [{ role: 'user', content: analysisPrompt }]
+    });
+
+    const responseText = response.content[0].text;
+
+    let suggestions = [];
+    try {
+      const jsonMatch = responseText.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        suggestions = JSON.parse(jsonMatch[0]);
+      }
+    } catch (e) {
+      console.error('Failed to parse scenario suggestions:', e.message);
+      return res.status(500).json({ error: 'Failed to parse AI response' });
+    }
+
+    res.json({ suggestions });
+  } catch (error) {
+    console.error('Scenario analysis error:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 const SYSTEM_PROMPT = `You are an expert analyst specializing in European naval procurement, Swedish defence policy, and military shipbuilding. You have deep knowledge of the Swedish Luleå-class surface combatant procurement programme.
 
 Key context:

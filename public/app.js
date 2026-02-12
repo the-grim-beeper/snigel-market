@@ -995,6 +995,11 @@ let scoreOverrides = {};
 let documents = [];
 let expandedDocId = null;
 
+// ── Scenario Analysis ──
+let scenarioSuggestions = [];
+let scenarioAnalyzing = false;
+let scenarioDescription = '';
+
 function applyScoreOverrides() {
   for (const [key, override] of Object.entries(scoreOverrides)) {
     const [nodeId, company] = key.split('::');
@@ -1885,10 +1890,35 @@ function renderScenarios() {
   let html = `
     <div class="compare-header">
       <h2>Procurement Scenarios</h2>
-      <p>Four potential outcomes based on open-source analysis. Click to explore each scenario with AI analysis.</p>
+      <p>Four potential outcomes based on open-source analysis, plus custom scenario projection.</p>
     </div>
   `;
 
+  // Custom scenario input area
+  html += `
+    <div class="scenario-input-area">
+      <div class="scenario-input-area-header">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        <span>Custom Scenario Projection</span>
+      </div>
+      <p class="scenario-input-description">Describe a hypothetical scenario and the AI will project how it would change scores across all criteria and companies.</p>
+      <textarea id="scenario-input" rows="3" placeholder="e.g. Sweden decides crew size is the top priority and eliminates any ship requiring more than 100 crew...">${escapeHtml(scenarioDescription)}</textarea>
+      <div class="scenario-input-actions">
+        <button class="scenario-submit-btn" onclick="analyzeScenario()" ${scenarioAnalyzing ? 'disabled' : ''}>
+          ${scenarioAnalyzing
+            ? '<span class="scenario-spinner"></span> Analyzing...'
+            : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg> Analyze Scenario'}
+        </button>
+      </div>
+    </div>
+  `;
+
+  // Scenario results panel
+  if (scenarioSuggestions.length > 0) {
+    html += renderScenarioSuggestions();
+  }
+
+  // Static scenario cards
   SCENARIOS.forEach(s => {
     html += `
       <div class="scenario-card ${s.cssClass}">
@@ -1908,6 +1938,179 @@ function renderScenarios() {
   });
 
   container.innerHTML = html;
+}
+
+function renderScenarioSuggestions() {
+  const appliedKeys = new Set(
+    scoreChangeLog
+      .filter(e => e.motivation && e.motivation.startsWith('[Scenario:'))
+      .map(e => `${e.nodeId}::${e.company}`)
+  );
+
+  let html = '<div class="scenario-results">';
+  html += `
+    <div class="scenario-results-header">
+      <div class="scenario-results-info">
+        <h4>Score Projections (${scenarioSuggestions.length})</h4>
+        <p class="scenario-results-description">${escapeHtml(scenarioDescription)}</p>
+      </div>
+      <div class="scenario-results-actions">
+        <button class="suggestion-apply-btn" onclick="applyAllScenarioSuggestions()">Apply All</button>
+        <button class="scenario-clear-btn" onclick="clearScenarioResults()">Clear</button>
+      </div>
+    </div>
+  `;
+
+  for (let i = 0; i < scenarioSuggestions.length; i++) {
+    const s = scenarioSuggestions[i];
+    const key = `${s.nodeId}::${s.company}`;
+    const isApplied = appliedKeys.has(key);
+    const node = findNode(DECISION_TREE, s.nodeId);
+    const currentScore = node?.scores?.[s.company]?.score;
+    const companyName = COMPANIES[s.company]?.name || s.company;
+    const companyClass = s.company;
+    const nodePath = findPath(DECISION_TREE, s.nodeId);
+    const pathStr = nodePath ? nodePath.slice(1, -1).join(' > ') : '';
+    const scoreColor = s.suggestedScore >= 8 ? 'score-color-high' : s.suggestedScore >= 6 ? 'score-color-mid' : 'score-color-low';
+
+    html += `
+      <div class="suggestion-row ${isApplied ? 'applied' : ''}">
+        <div class="suggestion-node">
+          <div class="suggestion-node-label">${node?.label || s.nodeId}</div>
+          ${pathStr ? `<div class="suggestion-node-path">${pathStr}</div>` : ''}
+          <div class="suggestion-rationale">${escapeHtml(s.rationale || '')}</div>
+        </div>
+        <span class="suggestion-company score-company-name ${companyClass}">${companyName}</span>
+        <div class="suggestion-scores">
+          <span style="color:var(--text-muted)">${currentScore != null ? currentScore.toFixed(1) : '?'}</span>
+          <span class="suggestion-arrow">&rarr;</span>
+          <span class="${scoreColor}" style="font-weight:700">${s.suggestedScore.toFixed(1)}</span>
+        </div>
+        <span class="suggestion-confidence ${s.confidence || 'medium'}">${s.confidence || 'medium'}</span>
+        ${isApplied
+          ? '<span class="suggestion-apply-btn applied">Applied</span>'
+          : `<button class="suggestion-apply-btn" onclick="applyScenarioSuggestion(${i})">Apply</button>`
+        }
+      </div>
+    `;
+  }
+
+  html += '</div>';
+  return html;
+}
+
+async function analyzeScenario() {
+  const textarea = document.getElementById('scenario-input');
+  const text = textarea.value.trim();
+  if (!text || scenarioAnalyzing) return;
+
+  scenarioDescription = text;
+  scenarioAnalyzing = true;
+  scenarioSuggestions = [];
+  renderScenarios();
+
+  const leafNodes = collectLeafNodes(DECISION_TREE, [], true);
+
+  try {
+    const res = await fetch('/api/scenarios/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scenario: text, leafNodes })
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      alert('Scenario analysis failed: ' + (err.error || 'Unknown error'));
+      scenarioAnalyzing = false;
+      renderScenarios();
+      return;
+    }
+
+    const result = await res.json();
+    scenarioSuggestions = result.suggestions || [];
+  } catch (err) {
+    console.error('Scenario analysis error:', err);
+    alert('Scenario analysis failed: ' + err.message);
+  }
+
+  scenarioAnalyzing = false;
+  renderScenarios();
+}
+
+async function applyScenarioSuggestion(index) {
+  const s = scenarioSuggestions[index];
+  if (!s) return;
+
+  const node = findNode(DECISION_TREE, s.nodeId);
+  if (!node?.scores?.[s.company]) return;
+
+  const currentData = node.scores[s.company];
+  const motivation = `[Scenario: ${scenarioDescription.slice(0, 80)}] ${s.rationale || 'AI-projected score change'}`;
+  const newRationale = s.rationale || currentData.rationale;
+
+  await saveScoreChange(
+    s.nodeId,
+    s.company,
+    currentData.score,
+    s.suggestedScore,
+    currentData.rationale,
+    newRationale,
+    motivation
+  );
+
+  node.scores[s.company].score = s.suggestedScore;
+  node.scores[s.company].rationale = newRationale;
+
+  renderScenarios();
+  if (selectedNode) renderDetail(selectedNode);
+  renderCompare();
+  renderProfiles();
+}
+
+async function applyAllScenarioSuggestions() {
+  const appliedKeys = new Set(
+    scoreChangeLog
+      .filter(e => e.motivation && e.motivation.startsWith('[Scenario:'))
+      .map(e => `${e.nodeId}::${e.company}`)
+  );
+
+  for (let i = 0; i < scenarioSuggestions.length; i++) {
+    const s = scenarioSuggestions[i];
+    const key = `${s.nodeId}::${s.company}`;
+    if (appliedKeys.has(key)) continue;
+
+    const node = findNode(DECISION_TREE, s.nodeId);
+    if (!node?.scores?.[s.company]) continue;
+
+    const currentData = node.scores[s.company];
+    const motivation = `[Scenario: ${scenarioDescription.slice(0, 80)}] ${s.rationale || 'AI-projected score change'}`;
+    const newRationale = s.rationale || currentData.rationale;
+
+    await saveScoreChange(
+      s.nodeId,
+      s.company,
+      currentData.score,
+      s.suggestedScore,
+      currentData.rationale,
+      newRationale,
+      motivation
+    );
+
+    node.scores[s.company].score = s.suggestedScore;
+    node.scores[s.company].rationale = newRationale;
+  }
+
+  renderScenarios();
+  if (selectedNode) renderDetail(selectedNode);
+  renderCompare();
+  renderProfiles();
+}
+
+function clearScenarioResults() {
+  scenarioSuggestions = [];
+  scenarioDescription = '';
+  scenarioAnalyzing = false;
+  renderScenarios();
 }
 
 // ── AI Panel ──
@@ -2143,12 +2346,19 @@ function sendQuickAction(btn, text) {
 }
 
 // ── Documents View ──
-function collectLeafNodes(node, list = []) {
+function collectLeafNodes(node, list = [], includeScores = false) {
   if (node.scores) {
-    list.push({ id: node.id, label: node.label, description: node.description || '' });
+    const entry = { id: node.id, label: node.label, description: node.description || '' };
+    if (includeScores) {
+      entry.scores = {};
+      for (const [company, data] of Object.entries(node.scores)) {
+        entry.scores[company] = data.score;
+      }
+    }
+    list.push(entry);
   }
   if (node.children) {
-    for (const child of node.children) collectLeafNodes(child, list);
+    for (const child of node.children) collectLeafNodes(child, list, includeScores);
   }
   return list;
 }
