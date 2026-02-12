@@ -1,11 +1,18 @@
 const express = require('express');
 const Anthropic = require('@anthropic-ai/sdk');
+const multer = require('multer');
+const pdfParse = require('pdf-parse');
 const path = require('path');
 const fs = require('fs');
 
-// ── Score persistence (JSON file) ──
+// ── Persistence paths ──
 const DATA_DIR = path.join(__dirname, 'data');
+const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 const DATA_FILE = path.join(DATA_DIR, 'changes.json');
+const DOCS_FILE = path.join(DATA_DIR, 'documents.json');
+
+// Ensure upload directory exists
+if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
 function loadData() {
   try {
@@ -21,6 +28,52 @@ function saveData(data) {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
   fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 }
+
+// ── Document persistence ──
+function loadDocuments() {
+  try {
+    if (!fs.existsSync(DOCS_FILE)) fs.writeFileSync(DOCS_FILE, JSON.stringify({ documents: [] }));
+    return JSON.parse(fs.readFileSync(DOCS_FILE, 'utf8'));
+  } catch {
+    return { documents: [] };
+  }
+}
+
+function saveDocuments(docs) {
+  fs.writeFileSync(DOCS_FILE, JSON.stringify(docs, null, 2));
+}
+
+// ── Override rebuild logic ──
+// Rebuilds overrides from changelog, skipping entries whose documentId belongs to an excluded document
+function rebuildOverrides(changelog, documents) {
+  const excludedDocIds = new Set(
+    documents.filter(d => !d.included).map(d => d.id)
+  );
+  const overrides = {};
+  for (const entry of changelog) {
+    if (entry.documentId && excludedDocIds.has(entry.documentId)) continue;
+    const key = `${entry.nodeId}::${entry.company}`;
+    overrides[key] = { score: entry.newScore, rationale: entry.newRationale };
+  }
+  return overrides;
+}
+
+// ── Multer config for PDF uploads ──
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, UPLOADS_DIR),
+    filename: (req, file, cb) => {
+      const id = `doc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      req.docId = id;
+      cb(null, `${id}.pdf`);
+    }
+  }),
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'application/pdf') cb(null, true);
+    else cb(new Error('Only PDF files are allowed'));
+  },
+  limits: { fileSize: 50 * 1024 * 1024 } // 50MB
+});
 
 // ── API key: set via ANTHROPIC_API_KEY env var (Railway) or paste here for local use ──
 const API_KEY = process.env.ANTHROPIC_API_KEY || '';
@@ -72,12 +125,8 @@ app.delete('/api/changes/:index', (req, res) => {
     return res.status(400).json({ error: 'Invalid index' });
   }
   data.changelog.splice(idx, 1);
-  // Recalculate overrides from remaining entries
-  data.overrides = {};
-  for (const entry of data.changelog) {
-    const key = `${entry.nodeId}::${entry.company}`;
-    data.overrides[key] = { score: entry.newScore, rationale: entry.newRationale };
-  }
+  const docs = loadDocuments();
+  data.overrides = rebuildOverrides(data.changelog, docs.documents);
   saveData(data);
   res.json(data);
 });
@@ -86,6 +135,175 @@ app.post('/api/changes/reset', (req, res) => {
   const data = { changelog: [], overrides: {} };
   saveData(data);
   res.json(data);
+});
+
+// ── Document API endpoints ──
+app.get('/api/documents', (req, res) => {
+  res.json(loadDocuments());
+});
+
+app.post('/api/documents/upload', upload.single('pdf'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No PDF file provided' });
+
+    const docId = req.docId;
+    const pdfPath = path.join(UPLOADS_DIR, `${docId}.pdf`);
+
+    // Extract text from PDF
+    const pdfBuffer = fs.readFileSync(pdfPath);
+    let extractedText = '';
+    try {
+      const pdfData = await pdfParse(pdfBuffer);
+      extractedText = pdfData.text;
+    } catch (e) {
+      console.error('PDF parse error:', e.message);
+    }
+
+    const doc = {
+      id: docId,
+      filename: req.file.originalname,
+      uploadedAt: new Date().toISOString(),
+      included: true,
+      status: 'uploaded',
+      extractedText: extractedText.slice(0, 100000), // cap stored text
+      suggestions: []
+    };
+
+    const docs = loadDocuments();
+    docs.documents.push(doc);
+    saveDocuments(docs);
+
+    // Return doc without the full extracted text to keep response small
+    const { extractedText: _, ...docMeta } = doc;
+    res.json(docMeta);
+  } catch (error) {
+    console.error('Upload error:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/documents/:id/analyze', async (req, res) => {
+  try {
+    const docs = loadDocuments();
+    const doc = docs.documents.find(d => d.id === req.params.id);
+    if (!doc) return res.status(404).json({ error: 'Document not found' });
+
+    const { leafNodes } = req.body;
+    if (!leafNodes || !leafNodes.length) {
+      return res.status(400).json({ error: 'leafNodes array required' });
+    }
+
+    doc.status = 'analyzing';
+    saveDocuments(docs);
+
+    // Build analysis prompt
+    const docText = (doc.extractedText || '').slice(0, 50000);
+    const criteriaJson = JSON.stringify(leafNodes, null, 2);
+
+    const analysisPrompt = `You are analyzing a document against a naval procurement decision framework.
+Below is the extracted text from "${doc.filename}".
+
+<document>
+${docText}
+</document>
+
+Below are the 53 leaf-level decision criteria. For each criterion where the document
+contains relevant information, suggest updated scores for one or more companies.
+
+<criteria>
+${criteriaJson}
+</criteria>
+
+Companies: Naval Group (naval-group), Babcock/Saab (babcock-saab), Navantia (navantia)
+
+Respond with ONLY a JSON array of suggestions:
+[{
+  "nodeId": "cap-aaw-radar",
+  "company": "naval-group",
+  "suggestedScore": 9.5,
+  "rationale": "Brief justification based on document evidence",
+  "confidence": "high|medium|low",
+  "excerpt": "Relevant quote or page reference from document"
+}]
+
+Only include nodes/companies where the document provides meaningful evidence.
+Do not suggest scores where the document is silent or irrelevant.`;
+
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-5-20250929',
+      max_tokens: 8192,
+      messages: [{ role: 'user', content: analysisPrompt }]
+    });
+
+    const responseText = response.content[0].text;
+
+    // Parse JSON from response (handle markdown code blocks)
+    let suggestions = [];
+    try {
+      const jsonMatch = responseText.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        suggestions = JSON.parse(jsonMatch[0]);
+      }
+    } catch (e) {
+      console.error('Failed to parse AI suggestions:', e.message);
+      doc.status = 'error';
+      saveDocuments(docs);
+      return res.status(500).json({ error: 'Failed to parse AI response' });
+    }
+
+    doc.suggestions = suggestions;
+    doc.status = 'analyzed';
+    saveDocuments(docs);
+
+    res.json({ id: doc.id, status: doc.status, suggestions: doc.suggestions });
+  } catch (error) {
+    console.error('Analysis error:', error.message);
+    // Update status to error
+    const docs = loadDocuments();
+    const doc = docs.documents.find(d => d.id === req.params.id);
+    if (doc) { doc.status = 'error'; saveDocuments(docs); }
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/documents/:id', (req, res) => {
+  const docs = loadDocuments();
+  const doc = docs.documents.find(d => d.id === req.params.id);
+  if (!doc) return res.status(404).json({ error: 'Document not found' });
+
+  if (req.body.included !== undefined) {
+    doc.included = req.body.included;
+  }
+  saveDocuments(docs);
+
+  // Rebuild overrides with updated inclusion state
+  const data = loadData();
+  data.overrides = rebuildOverrides(data.changelog, docs.documents);
+  saveData(data);
+
+  res.json({ document: { id: doc.id, included: doc.included }, changes: data });
+});
+
+app.delete('/api/documents/:id', (req, res) => {
+  const docs = loadDocuments();
+  const docIndex = docs.documents.findIndex(d => d.id === req.params.id);
+  if (docIndex === -1) return res.status(404).json({ error: 'Document not found' });
+
+  const docId = docs.documents[docIndex].id;
+  docs.documents.splice(docIndex, 1);
+  saveDocuments(docs);
+
+  // Remove uploaded PDF file
+  const pdfPath = path.join(UPLOADS_DIR, `${docId}.pdf`);
+  if (fs.existsSync(pdfPath)) fs.unlinkSync(pdfPath);
+
+  // Remove changelog entries from this document and rebuild overrides
+  const data = loadData();
+  data.changelog = data.changelog.filter(e => e.documentId !== docId);
+  data.overrides = rebuildOverrides(data.changelog, docs.documents);
+  saveData(data);
+
+  res.json({ documents: docs, changes: data });
 });
 
 const SYSTEM_PROMPT = `You are an expert analyst specializing in European naval procurement, Swedish defence policy, and military shipbuilding. You have deep knowledge of the Swedish Luleå-class surface combatant procurement programme.

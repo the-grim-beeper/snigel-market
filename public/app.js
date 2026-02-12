@@ -991,6 +991,10 @@ let isAILoading = false;
 let scoreChangeLog = [];
 let scoreOverrides = {};
 
+// ── Documents ──
+let documents = [];
+let expandedDocId = null;
+
 function applyScoreOverrides() {
   for (const [key, override] of Object.entries(scoreOverrides)) {
     const [nodeId, company] = key.split('::');
@@ -1002,7 +1006,7 @@ function applyScoreOverrides() {
   }
 }
 
-async function saveScoreChange(nodeId, company, oldScore, newScore, oldRationale, newRationale, motivation) {
+async function saveScoreChange(nodeId, company, oldScore, newScore, oldRationale, newRationale, motivation, documentId) {
   const entry = {
     timestamp: new Date().toISOString(),
     nodeId,
@@ -1015,6 +1019,7 @@ async function saveScoreChange(nodeId, company, oldScore, newScore, oldRationale
     newRationale,
     motivation
   };
+  if (documentId) entry.documentId = documentId;
 
   try {
     const res = await fetch('/api/changes', {
@@ -1319,12 +1324,17 @@ async function deleteChange(index) {
 // ── Initialization ──
 document.addEventListener('DOMContentLoaded', async () => {
   try {
-    const res = await fetch('/api/changes');
-    const data = await res.json();
+    const [changesRes, docsRes] = await Promise.all([
+      fetch('/api/changes'),
+      fetch('/api/documents')
+    ]);
+    const data = await changesRes.json();
     scoreChangeLog = data.changelog || [];
     scoreOverrides = data.overrides || {};
+    const docsData = await docsRes.json();
+    documents = docsData.documents || [];
   } catch (err) {
-    console.error('Failed to load changes from server:', err);
+    console.error('Failed to load data from server:', err);
   }
   applyScoreOverrides();
   renderTree();
@@ -1342,6 +1352,7 @@ function switchView(view) {
     b.classList.toggle('active', b.dataset.view === view);
   });
   if (view === 'changelog') renderChangeLog();
+  if (view === 'documents') renderDocuments();
 }
 
 // ── Tree Rendering ──
@@ -2129,6 +2140,324 @@ function sendQuickAction(btn, text) {
   if (isAILoading) return;
   addMessage('user', text);
   fetchAIResponse();
+}
+
+// ── Documents View ──
+function collectLeafNodes(node, list = []) {
+  if (node.scores) {
+    list.push({ id: node.id, label: node.label, description: node.description || '' });
+  }
+  if (node.children) {
+    for (const child of node.children) collectLeafNodes(child, list);
+  }
+  return list;
+}
+
+function renderDocuments() {
+  const container = document.getElementById('documents-container');
+
+  let html = `
+    <div class="compare-header">
+      <h2>Document Analysis</h2>
+      <p>Upload PDF documents for AI-powered analysis against the 53 evaluation criteria.</p>
+    </div>
+  `;
+
+  // Upload zone
+  html += `
+    <div class="upload-zone" id="upload-zone"
+         ondragover="event.preventDefault(); this.classList.add('drag-over')"
+         ondragleave="this.classList.remove('drag-over')"
+         ondrop="event.preventDefault(); this.classList.remove('drag-over'); handleFileDrop(event)"
+         onclick="document.getElementById('file-input').click()">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/>
+        <line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+      <h3>Drop a PDF here or click to upload</h3>
+      <p>Documents will be analyzed against all evaluation criteria</p>
+      <input type="file" id="file-input" accept=".pdf" style="display:none" onchange="handleFileSelect(event)">
+    </div>
+  `;
+
+  // Document list
+  if (documents.length === 0) {
+    html += `
+      <div class="doc-empty-state">
+        <p>No documents uploaded yet. Upload a PDF to get started.</p>
+      </div>
+    `;
+  } else {
+    for (const doc of documents) {
+      const isExpanded = expandedDocId === doc.id;
+      const date = new Date(doc.uploadedAt);
+      const dateStr = date.toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      const suggestionCount = (doc.suggestions || []).length;
+
+      // Check which suggestions have already been applied
+      const appliedKeys = new Set(
+        scoreChangeLog.filter(e => e.documentId === doc.id).map(e => `${e.nodeId}::${e.company}`)
+      );
+
+      html += `
+        <div class="document-card ${isExpanded ? 'expanded' : ''}" data-doc-id="${doc.id}">
+          <div class="document-card-header" onclick="toggleDocExpand('${doc.id}')">
+            <div class="document-card-icon">PDF</div>
+            <div class="document-card-info">
+              <div class="document-card-filename">${escapeHtml(doc.filename)}</div>
+              <div class="document-card-date">${dateStr}${suggestionCount > 0 ? ` &middot; ${suggestionCount} suggestion${suggestionCount !== 1 ? 's' : ''}` : ''}</div>
+            </div>
+            <span class="document-status ${doc.status}">${doc.status}</span>
+            ${doc.status === 'uploaded' ? `<button class="doc-analyze-btn" onclick="event.stopPropagation(); analyzeDocument('${doc.id}')">Analyze</button>` : ''}
+            ${doc.status === 'analyzed' ? `
+              <label class="include-toggle" onclick="event.stopPropagation()">
+                <input type="checkbox" ${doc.included ? 'checked' : ''} onchange="toggleDocumentIncluded('${doc.id}', this.checked)" title="${doc.included ? 'Included in assessment' : 'Excluded from assessment'}">
+              </label>
+            ` : ''}
+            <div class="document-card-actions">
+              <button class="doc-delete-btn" onclick="event.stopPropagation(); deleteDocument('${doc.id}')" title="Delete document">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+              </button>
+              <svg class="doc-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </div>
+          </div>
+          <div class="document-card-body">
+            ${renderDocumentSuggestions(doc, appliedKeys)}
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  container.innerHTML = html;
+}
+
+function renderDocumentSuggestions(doc, appliedKeys) {
+  if (!doc.suggestions || doc.suggestions.length === 0) {
+    if (doc.status === 'analyzed') {
+      return '<div class="document-suggestions"><div class="doc-empty-state">No relevant suggestions found in this document.</div></div>';
+    }
+    if (doc.status === 'analyzing') {
+      return '<div class="document-suggestions"><div class="doc-empty-state">Analyzing document... this may take a minute.</div></div>';
+    }
+    if (doc.status === 'error') {
+      return '<div class="document-suggestions"><div class="doc-empty-state" style="color:var(--red)">Analysis failed. Try again.</div></div>';
+    }
+    return '';
+  }
+
+  let html = '<div class="document-suggestions">';
+  html += `
+    <div class="suggestions-header">
+      <h4>${doc.suggestions.length} Suggestion${doc.suggestions.length !== 1 ? 's' : ''}</h4>
+    </div>
+  `;
+
+  for (let i = 0; i < doc.suggestions.length; i++) {
+    const s = doc.suggestions[i];
+    const key = `${s.nodeId}::${s.company}`;
+    const isApplied = appliedKeys.has(key);
+    const node = findNode(DECISION_TREE, s.nodeId);
+    const currentScore = node?.scores?.[s.company]?.score;
+    const companyName = COMPANIES[s.company]?.name || s.company;
+    const companyClass = s.company;
+    const nodePath = findPath(DECISION_TREE, s.nodeId);
+    const pathStr = nodePath ? nodePath.slice(1, -1).join(' > ') : '';
+
+    const scoreColor = s.suggestedScore >= 8 ? 'score-color-high' : s.suggestedScore >= 6 ? 'score-color-mid' : 'score-color-low';
+
+    html += `
+      <div class="suggestion-row ${isApplied ? 'applied' : ''}">
+        <div class="suggestion-node">
+          <div class="suggestion-node-label">${node?.label || s.nodeId}</div>
+          ${pathStr ? `<div class="suggestion-node-path">${pathStr}</div>` : ''}
+          <div class="suggestion-rationale">${escapeHtml(s.rationale || '')}</div>
+          ${s.excerpt ? `<div class="suggestion-excerpt">${escapeHtml(s.excerpt)}</div>` : ''}
+        </div>
+        <span class="suggestion-company score-company-name ${companyClass}">${companyName}</span>
+        <div class="suggestion-scores">
+          <span style="color:var(--text-muted)">${currentScore != null ? currentScore.toFixed(1) : '?'}</span>
+          <span class="suggestion-arrow">→</span>
+          <span class="${scoreColor}" style="font-weight:700">${s.suggestedScore.toFixed(1)}</span>
+        </div>
+        <span class="suggestion-confidence ${s.confidence || 'medium'}">${s.confidence || 'medium'}</span>
+        ${isApplied
+          ? `<span class="suggestion-apply-btn applied">Applied</span>`
+          : `<button class="suggestion-apply-btn" onclick="event.stopPropagation(); applyDocumentSuggestion('${doc.id}', ${i})">Apply</button>`
+        }
+      </div>
+    `;
+  }
+
+  html += '</div>';
+  return html;
+}
+
+function toggleDocExpand(docId) {
+  expandedDocId = expandedDocId === docId ? null : docId;
+  renderDocuments();
+}
+
+function handleFileDrop(event) {
+  const files = event.dataTransfer.files;
+  if (files.length > 0 && files[0].type === 'application/pdf') {
+    uploadDocument(files[0]);
+  }
+}
+
+function handleFileSelect(event) {
+  const files = event.target.files;
+  if (files.length > 0) {
+    uploadDocument(files[0]);
+  }
+  event.target.value = ''; // reset so same file can be re-selected
+}
+
+async function uploadDocument(file) {
+  const formData = new FormData();
+  formData.append('pdf', file);
+
+  try {
+    const res = await fetch('/api/documents/upload', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      alert('Upload failed: ' + (err.error || 'Unknown error'));
+      return;
+    }
+
+    const doc = await res.json();
+    documents.push(doc);
+    expandedDocId = doc.id;
+    renderDocuments();
+  } catch (err) {
+    console.error('Upload error:', err);
+    alert('Upload failed: ' + err.message);
+  }
+}
+
+async function analyzeDocument(docId) {
+  // Update local status to analyzing
+  const doc = documents.find(d => d.id === docId);
+  if (!doc) return;
+  doc.status = 'analyzing';
+  renderDocuments();
+
+  // Collect leaf nodes
+  const leafNodes = collectLeafNodes(DECISION_TREE);
+
+  try {
+    const res = await fetch(`/api/documents/${docId}/analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ leafNodes })
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      doc.status = 'error';
+      renderDocuments();
+      alert('Analysis failed: ' + (err.error || 'Unknown error'));
+      return;
+    }
+
+    const result = await res.json();
+    doc.status = result.status;
+    doc.suggestions = result.suggestions;
+    expandedDocId = docId;
+    renderDocuments();
+  } catch (err) {
+    console.error('Analysis error:', err);
+    doc.status = 'error';
+    renderDocuments();
+  }
+}
+
+async function applyDocumentSuggestion(docId, suggestionIndex) {
+  const doc = documents.find(d => d.id === docId);
+  if (!doc || !doc.suggestions[suggestionIndex]) return;
+
+  const s = doc.suggestions[suggestionIndex];
+  const node = findNode(DECISION_TREE, s.nodeId);
+  if (!node?.scores?.[s.company]) return;
+
+  const currentData = node.scores[s.company];
+  const motivation = `[Document: ${doc.filename}] ${s.rationale || 'AI-suggested score update'}`;
+  const newRationale = s.rationale || currentData.rationale;
+
+  await saveScoreChange(
+    s.nodeId,
+    s.company,
+    currentData.score,
+    s.suggestedScore,
+    currentData.rationale,
+    newRationale,
+    motivation,
+    docId
+  );
+
+  // Apply immediately to live data
+  node.scores[s.company].score = s.suggestedScore;
+  node.scores[s.company].rationale = newRationale;
+
+  // Re-render affected views
+  renderDocuments();
+  if (selectedNode) renderDetail(selectedNode);
+  renderCompare();
+  renderScenarios();
+  renderProfiles();
+}
+
+async function toggleDocumentIncluded(docId, included) {
+  try {
+    const res = await fetch(`/api/documents/${docId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ included })
+    });
+
+    if (!res.ok) {
+      alert('Failed to toggle document inclusion');
+      return;
+    }
+
+    const result = await res.json();
+
+    // Update local document
+    const doc = documents.find(d => d.id === docId);
+    if (doc) doc.included = included;
+
+    // Update overrides from server response
+    scoreChangeLog = result.changes.changelog;
+    scoreOverrides = result.changes.overrides;
+
+    // Reload to re-apply overrides from scratch
+    location.reload();
+  } catch (err) {
+    console.error('Toggle error:', err);
+  }
+}
+
+async function deleteDocument(docId) {
+  const doc = documents.find(d => d.id === docId);
+  if (!confirm(`Delete "${doc?.filename || docId}" and remove all its applied score changes?`)) return;
+
+  try {
+    const res = await fetch(`/api/documents/${docId}`, { method: 'DELETE' });
+    if (!res.ok) {
+      alert('Failed to delete document');
+      return;
+    }
+
+    // Reload to re-apply state cleanly
+    location.reload();
+  } catch (err) {
+    console.error('Delete error:', err);
+  }
 }
 
 // ── Utilities ──
