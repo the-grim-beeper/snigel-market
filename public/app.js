@@ -2678,21 +2678,77 @@ function escapeHtml(text) {
 }
 
 function formatMarkdown(text) {
-  // Simple markdown formatting
-  return text
+  // Escape HTML
+  let html = text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/^### (.+)$/gm, '<strong style="font-size:14px;display:block;margin-top:12px;">$1</strong>')
-    .replace(/^## (.+)$/gm, '<strong style="font-size:15px;display:block;margin-top:14px;">$1</strong>')
-    .replace(/^# (.+)$/gm, '<strong style="font-size:16px;display:block;margin-top:16px;">$1</strong>')
-    .replace(/^- (.+)$/gm, '<li>$1</li>')
-    .replace(/^(\d+)\. (.+)$/gm, '<li>$1. $2</li>')
-    .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
-    .replace(/\n\n/g, '</p><p>')
-    .replace(/\n/g, '<br>')
-    .replace(/^/, '<p>')
-    .replace(/$/, '</p>');
+    .replace(/>/g, '&gt;');
+
+  // Code blocks (``` ... ```)
+  html = html.replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
+  // Inline code
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+  // Bold and italic (bold first to avoid conflict)
+  html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+
+  // Process line by line for block elements
+  const lines = html.split('\n');
+  const output = [];
+  let inList = false;
+  let listType = '';
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    // Headings
+    const h3 = line.match(/^### (.+)$/);
+    const h2 = line.match(/^## (.+)$/);
+    const h1 = line.match(/^# (.+)$/);
+    if (h3) { closeList(); output.push(`<h4>${h3[1]}</h4>`); continue; }
+    if (h2) { closeList(); output.push(`<h3>${h2[1]}</h3>`); continue; }
+    if (h1) { closeList(); output.push(`<h2>${h1[1]}</h2>`); continue; }
+
+    // Horizontal rule
+    if (/^---+$/.test(line.trim())) { closeList(); output.push('<hr>'); continue; }
+
+    // Unordered list
+    const ul = line.match(/^[\s]*[-*] (.+)$/);
+    if (ul) {
+      if (!inList || listType !== 'ul') { closeList(); output.push('<ul>'); inList = true; listType = 'ul'; }
+      output.push(`<li>${ul[1]}</li>`);
+      continue;
+    }
+
+    // Ordered list
+    const ol = line.match(/^[\s]*(\d+)\. (.+)$/);
+    if (ol) {
+      if (!inList || listType !== 'ol') { closeList(); output.push('<ol>'); inList = true; listType = 'ol'; }
+      output.push(`<li>${ol[2]}</li>`);
+      continue;
+    }
+
+    // Non-list line — close any open list
+    closeList();
+
+    // Empty line = paragraph break
+    if (line.trim() === '') {
+      output.push('<br>');
+    } else {
+      output.push(`<p>${line}</p>`);
+    }
+  }
+  closeList();
+
+  return output.join('\n');
+
+  function closeList() {
+    if (inList) {
+      output.push(listType === 'ol' ? '</ol>' : '</ul>');
+      inList = false;
+      listType = '';
+    }
+  }
 }
