@@ -1,6 +1,26 @@
 const express = require('express');
 const Anthropic = require('@anthropic-ai/sdk');
 const path = require('path');
+const fs = require('fs');
+
+// ── Score persistence (JSON file) ──
+const DATA_DIR = path.join(__dirname, 'data');
+const DATA_FILE = path.join(DATA_DIR, 'changes.json');
+
+function loadData() {
+  try {
+    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+    if (!fs.existsSync(DATA_FILE)) fs.writeFileSync(DATA_FILE, JSON.stringify({ changelog: [], overrides: {} }));
+    return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+  } catch {
+    return { changelog: [], overrides: {} };
+  }
+}
+
+function saveData(data) {
+  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+}
 
 // ── API key: set via ANTHROPIC_API_KEY env var (Railway) or paste here for local use ──
 const API_KEY = process.env.ANTHROPIC_API_KEY || '';
@@ -29,6 +49,44 @@ if (SITE_PASSWORD) {
 app.use(express.static(path.join(__dirname, 'public')));
 
 const anthropic = new Anthropic(API_KEY ? { apiKey: API_KEY } : undefined);
+
+// ── Score change API endpoints ──
+app.get('/api/changes', (req, res) => {
+  res.json(loadData());
+});
+
+app.post('/api/changes', (req, res) => {
+  const entry = req.body;
+  const data = loadData();
+  data.changelog.push(entry);
+  const key = `${entry.nodeId}::${entry.company}`;
+  data.overrides[key] = { score: entry.newScore, rationale: entry.newRationale };
+  saveData(data);
+  res.json(data);
+});
+
+app.delete('/api/changes/:index', (req, res) => {
+  const idx = parseInt(req.params.index, 10);
+  const data = loadData();
+  if (idx < 0 || idx >= data.changelog.length) {
+    return res.status(400).json({ error: 'Invalid index' });
+  }
+  data.changelog.splice(idx, 1);
+  // Recalculate overrides from remaining entries
+  data.overrides = {};
+  for (const entry of data.changelog) {
+    const key = `${entry.nodeId}::${entry.company}`;
+    data.overrides[key] = { score: entry.newScore, rationale: entry.newRationale };
+  }
+  saveData(data);
+  res.json(data);
+});
+
+app.post('/api/changes/reset', (req, res) => {
+  const data = { changelog: [], overrides: {} };
+  saveData(data);
+  res.json(data);
+});
 
 const SYSTEM_PROMPT = `You are an expert analyst specializing in European naval procurement, Swedish defence policy, and military shipbuilding. You have deep knowledge of the Swedish Luleå-class surface combatant procurement programme.
 

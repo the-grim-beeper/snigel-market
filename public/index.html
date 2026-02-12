@@ -43,6 +43,10 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
         Scenarios
       </button>
+      <button class="nav-btn" data-view="changelog" onclick="switchView('changelog')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>
+        Change Log
+      </button>
     </nav>
   </header>
 
@@ -78,7 +82,50 @@
     <div id="view-scenarios" class="view">
       <div class="scenarios-container" id="scenarios-container"></div>
     </div>
+
+    <!-- CHANGE LOG VIEW -->
+    <div id="view-changelog" class="view">
+      <div class="compare-container" id="changelog-container"></div>
+    </div>
   </main>
+
+  <!-- Edit Score Modal -->
+  <div id="edit-modal-overlay" class="modal-overlay" onclick="closeEditModal()"></div>
+  <div id="edit-modal" class="edit-modal">
+    <div class="edit-modal-header">
+      <h3>Edit Score</h3>
+      <button class="close-btn" onclick="closeEditModal()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="edit-modal-body">
+      <div class="edit-modal-context">
+        <span id="edit-modal-company" class="edit-modal-company"></span>
+        <span id="edit-modal-node" class="edit-modal-node"></span>
+      </div>
+      <div class="edit-field">
+        <label>Score</label>
+        <div class="edit-score-row">
+          <input type="range" id="edit-score-slider" min="0" max="10" step="0.5" value="5" oninput="updateScorePreview(this.value)">
+          <span id="edit-score-value" class="edit-score-display">5</span>
+          <span class="edit-score-max">/ 10</span>
+        </div>
+      </div>
+      <div id="edit-impact-preview" class="edit-impact-preview"></div>
+      <div class="edit-field">
+        <label>Updated Rationale</label>
+        <textarea id="edit-rationale" rows="3" placeholder="Describe the reasoning behind this score..."></textarea>
+      </div>
+      <div class="edit-field">
+        <label>Motivation for Change <span class="required">*required</span></label>
+        <textarea id="edit-motivation" rows="3" placeholder="Why are you changing this score? What new information or reasoning supports this change?"></textarea>
+      </div>
+      <div class="edit-modal-actions">
+        <button class="score-action-btn" onclick="closeEditModal()">Cancel</button>
+        <button class="score-action-btn primary" id="edit-save-btn" onclick="saveEdit()">Save Change</button>
+      </div>
+    </div>
+  </div>
 
   <!-- AI Chat Slide-over -->
   <div id="ai-overlay" class="ai-overlay" onclick="closeAIPanel()"></div>

@@ -982,12 +982,351 @@ const SCENARIOS = [
 // ── State ──
 let currentView = 'tree';
 let selectedNode = null;
+let selectedNodePath = [];
 let aiMessages = [];
 let aiContext = '';
 let isAILoading = false;
 
+// ── Score Change Log (persisted on server) ──
+let scoreChangeLog = [];
+let scoreOverrides = {};
+
+function applyScoreOverrides() {
+  for (const [key, override] of Object.entries(scoreOverrides)) {
+    const [nodeId, company] = key.split('::');
+    const node = findNode(DECISION_TREE, nodeId);
+    if (node?.scores?.[company]) {
+      node.scores[company].score = override.score;
+      node.scores[company].rationale = override.rationale;
+    }
+  }
+}
+
+async function saveScoreChange(nodeId, company, oldScore, newScore, oldRationale, newRationale, motivation) {
+  const entry = {
+    timestamp: new Date().toISOString(),
+    nodeId,
+    nodeLabel: findNode(DECISION_TREE, nodeId)?.label || nodeId,
+    company,
+    companyName: COMPANIES[company]?.name || company,
+    oldScore,
+    newScore,
+    oldRationale,
+    newRationale,
+    motivation
+  };
+
+  try {
+    const res = await fetch('/api/changes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(entry)
+    });
+    const data = await res.json();
+    scoreChangeLog = data.changelog;
+    scoreOverrides = data.overrides;
+  } catch (err) {
+    console.error('Failed to save change:', err);
+    // Fallback: update local state anyway
+    const overrideKey = `${nodeId}::${company}`;
+    scoreOverrides[overrideKey] = { score: newScore, rationale: newRationale };
+    scoreChangeLog.push(entry);
+  }
+}
+
+// ── Edit Modal ──
+let editContext = null; // { nodeId, companyKey, originalScore, originalRationale }
+
+function openEditModal(nodeId, companyKey) {
+  const node = findNode(DECISION_TREE, nodeId);
+  if (!node?.scores?.[companyKey]) return;
+
+  const data = node.scores[companyKey];
+  const company = COMPANIES[companyKey];
+
+  editContext = {
+    nodeId,
+    companyKey,
+    originalScore: data.score,
+    originalRationale: data.rationale
+  };
+
+  document.getElementById('edit-modal-company').textContent = company.name;
+  document.getElementById('edit-modal-node').textContent = node.label;
+
+  const slider = document.getElementById('edit-score-slider');
+  slider.value = data.score;
+  document.getElementById('edit-score-value').textContent = data.score;
+
+  document.getElementById('edit-rationale').value = data.rationale;
+  document.getElementById('edit-motivation').value = '';
+
+  // Show initial impact preview
+  updateScorePreview(data.score);
+
+  document.getElementById('edit-modal').classList.add('open');
+  document.getElementById('edit-modal-overlay').classList.add('open');
+}
+
+function updateScorePreview(newValue) {
+  const preview = document.getElementById('edit-impact-preview');
+  document.getElementById('edit-score-value').textContent = newValue;
+
+  if (!editContext) { preview.innerHTML = ''; return; }
+
+  const { nodeId, companyKey, originalScore } = editContext;
+  const newScore = parseFloat(newValue);
+  const node = findNode(DECISION_TREE, nodeId);
+  if (!node) { preview.innerHTML = ''; return; }
+
+  // Temporarily swap the score to compute "after" aggregates
+  const savedScore = node.scores[companyKey].score;
+
+  // Compute current parent aggregate (with original score)
+  const parent = findParent(DECISION_TREE, nodeId);
+  const categoryNode = parent && parent.id !== 'root' ? parent : null;
+
+  // Current aggregates
+  const currentRoot = computeAggregateScores(DECISION_TREE);
+  const currentCategory = categoryNode ? computeAggregateScores(categoryNode) : null;
+
+  // Apply hypothetical score
+  node.scores[companyKey].score = newScore;
+  const newRoot = computeAggregateScores(DECISION_TREE);
+  const newCategory = categoryNode ? computeAggregateScores(categoryNode) : null;
+
+  // Restore original
+  node.scores[companyKey].score = savedScore;
+
+  let html = '<div class="impact-label">Impact Preview</div><div class="impact-rows">';
+
+  if (currentCategory && newCategory && categoryNode) {
+    const before = currentCategory[companyKey]?.toFixed(2) ?? '—';
+    const after = newCategory[companyKey]?.toFixed(2) ?? '—';
+    const delta = (newCategory[companyKey] - currentCategory[companyKey]);
+    const deltaStr = delta > 0 ? `+${delta.toFixed(2)}` : delta.toFixed(2);
+    const deltaClass = delta > 0 ? 'impact-up' : delta < 0 ? 'impact-down' : '';
+    html += `
+      <div class="impact-row">
+        <span class="impact-scope">${categoryNode.label}</span>
+        <span class="impact-values">${before} → ${after} <span class="${deltaClass}">(${deltaStr})</span></span>
+      </div>
+    `;
+  }
+
+  if (currentRoot && newRoot) {
+    const before = currentRoot[companyKey]?.toFixed(2) ?? '—';
+    const after = newRoot[companyKey]?.toFixed(2) ?? '—';
+    const delta = (newRoot[companyKey] - currentRoot[companyKey]);
+    const deltaStr = delta > 0 ? `+${delta.toFixed(2)}` : delta.toFixed(2);
+    const deltaClass = delta > 0 ? 'impact-up' : delta < 0 ? 'impact-down' : '';
+    html += `
+      <div class="impact-row">
+        <span class="impact-scope">Overall Score</span>
+        <span class="impact-values">${before} → ${after} <span class="${deltaClass}">(${deltaStr})</span></span>
+      </div>
+    `;
+  }
+
+  html += '</div>';
+  preview.innerHTML = html;
+}
+
+function closeEditModal() {
+  document.getElementById('edit-modal').classList.remove('open');
+  document.getElementById('edit-modal-overlay').classList.remove('open');
+  editContext = null;
+}
+
+async function saveEdit() {
+  if (!editContext) return;
+
+  const motivation = document.getElementById('edit-motivation').value.trim();
+  if (!motivation) {
+    document.getElementById('edit-motivation').style.borderColor = '#ef4444';
+    document.getElementById('edit-motivation').setAttribute('placeholder', 'Motivation is required — please explain why you are changing this score.');
+    document.getElementById('edit-motivation').focus();
+    return;
+  }
+
+  const newScore = parseFloat(document.getElementById('edit-score-slider').value);
+  const newRationale = document.getElementById('edit-rationale').value.trim() || editContext.originalRationale;
+
+  await saveScoreChange(
+    editContext.nodeId,
+    editContext.companyKey,
+    editContext.originalScore,
+    newScore,
+    editContext.originalRationale,
+    newRationale,
+    motivation
+  );
+
+  // Apply immediately to the live data
+  const node = findNode(DECISION_TREE, editContext.nodeId);
+  if (node?.scores?.[editContext.companyKey]) {
+    node.scores[editContext.companyKey].score = newScore;
+    node.scores[editContext.companyKey].rationale = newRationale;
+  }
+
+  closeEditModal();
+
+  // Re-render affected views
+  if (selectedNode) {
+    renderDetail(selectedNode);
+  }
+  renderCompare();
+  renderScenarios();
+  renderProfiles();
+}
+
+// ── Inline Score History ──
+function renderInlineHistory(nodeId, companyKey) {
+  const entries = scoreChangeLog.filter(e => e.nodeId === nodeId && e.company === companyKey);
+  if (entries.length === 0) return '';
+
+  const rows = [...entries].reverse().map(entry => {
+    const originalIndex = scoreChangeLog.indexOf(entry);
+    const date = new Date(entry.timestamp);
+    const timeStr = date.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    const delta = entry.newScore - entry.oldScore;
+    const deltaStr = delta > 0 ? `+${delta.toFixed(1)}` : delta.toFixed(1);
+    const deltaClass = delta > 0 ? 'history-up' : delta < 0 ? 'history-down' : '';
+
+    return `
+      <div class="inline-history-entry">
+        <div class="inline-history-top">
+          <span class="inline-history-scores">${entry.oldScore.toFixed(1)} → ${entry.newScore.toFixed(1)} <span class="${deltaClass}">(${deltaStr})</span></span>
+          <span style="display:flex;align-items:center;gap:6px;">
+            <span class="inline-history-time">${timeStr}</span>
+            <button class="delete-change-btn" onclick="deleteChange(${originalIndex})" title="Delete this edit">×</button>
+          </span>
+        </div>
+        <div class="inline-history-motivation">${entry.motivation}</div>
+      </div>
+    `;
+  }).join('');
+
+  return `
+    <div class="inline-history">
+      <div class="inline-history-label">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>
+        Change History (${entries.length})
+      </div>
+      ${rows}
+    </div>
+  `;
+}
+
+// ── Change Log Rendering ──
+function renderChangeLog() {
+  const container = document.getElementById('changelog-container');
+
+  if (scoreChangeLog.length === 0) {
+    container.innerHTML = `
+      <div class="detail-placeholder" style="padding:60px 20px;">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3">
+          <path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/>
+        </svg>
+        <h3>No changes recorded yet</h3>
+        <p>When you edit a score in the Decision Tree view, the change and your motivation will appear here.</p>
+      </div>
+    `;
+    return;
+  }
+
+  let html = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+      <h2 style="color:var(--text-primary);margin:0;">Score Change Log</h2>
+      <button class="reset-btn" onclick="resetAllChanges()">Reset All Changes</button>
+    </div>
+    <p style="color:var(--text-secondary);margin-bottom:24px;font-size:14px;">${scoreChangeLog.length} change${scoreChangeLog.length !== 1 ? 's' : ''} recorded</p>
+  `;
+
+  // Show newest first
+  const entries = scoreChangeLog.map((entry, i) => ({ ...entry, originalIndex: i })).reverse();
+
+  for (const entry of entries) {
+    const date = new Date(entry.timestamp);
+    const timeStr = date.toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const scoreDelta = entry.newScore - entry.oldScore;
+    const deltaStr = scoreDelta > 0 ? `+${scoreDelta.toFixed(1)}` : scoreDelta.toFixed(1);
+    const deltaClass = scoreDelta > 0 ? 'score-color-high' : scoreDelta < 0 ? 'score-color-low' : 'score-color-mid';
+
+    html += `
+      <div class="changelog-entry">
+        <div class="changelog-header">
+          <div>
+            <span class="score-company-name ${entry.company}" style="font-size:13px;">${entry.companyName}</span>
+            <span style="color:var(--text-secondary);font-size:13px;margin:0 6px;">→</span>
+            <span style="color:var(--text-primary);font-size:13px;font-weight:500;">${entry.nodeLabel}</span>
+          </div>
+          <span style="display:flex;align-items:center;gap:8px;">
+            <span style="color:var(--text-tertiary);font-size:12px;">${timeStr}</span>
+            <button class="delete-change-btn" onclick="deleteChange(${entry.originalIndex})" title="Delete this edit">×</button>
+          </span>
+        </div>
+        <div class="changelog-score-change">
+          <span class="score-badge score-color-mid" style="font-size:12px;padding:2px 8px;">${entry.oldScore.toFixed(1)}</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2" style="margin:0 4px;"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          <span class="score-badge ${deltaClass}" style="font-size:12px;padding:2px 8px;">${entry.newScore.toFixed(1)}</span>
+          <span style="color:var(--text-tertiary);font-size:12px;margin-left:8px;">(${deltaStr})</span>
+        </div>
+        <div class="changelog-motivation">
+          <strong style="color:var(--text-secondary);font-size:11px;text-transform:uppercase;letter-spacing:0.5px;">Motivation</strong>
+          <p style="color:var(--text-primary);font-size:13px;margin:4px 0 0;line-height:1.5;">${entry.motivation}</p>
+        </div>
+        ${entry.newRationale !== entry.oldRationale ? `
+          <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border-subtle);">
+            <strong style="color:var(--text-secondary);font-size:11px;text-transform:uppercase;letter-spacing:0.5px;">Updated Rationale</strong>
+            <p style="color:var(--text-secondary);font-size:13px;margin:4px 0 0;line-height:1.5;">${entry.newRationale}</p>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }
+
+  container.innerHTML = html;
+}
+
+async function resetAllChanges() {
+  if (!confirm('Reset all score changes? This will revert all edited scores to their original values and clear the change log.')) return;
+
+  try {
+    await fetch('/api/changes/reset', { method: 'POST' });
+  } catch (err) {
+    console.error('Failed to reset changes:', err);
+  }
+
+  // Reload the page to restore original scores from the hardcoded data
+  location.reload();
+}
+
+async function deleteChange(index) {
+  try {
+    const res = await fetch(`/api/changes/${index}`, { method: 'DELETE' });
+    const data = await res.json();
+    scoreChangeLog = data.changelog;
+    scoreOverrides = data.overrides;
+
+    // Reload to reapply overrides from scratch
+    location.reload();
+  } catch (err) {
+    console.error('Failed to delete change:', err);
+  }
+}
+
 // ── Initialization ──
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const res = await fetch('/api/changes');
+    const data = await res.json();
+    scoreChangeLog = data.changelog || [];
+    scoreOverrides = data.overrides || {};
+  } catch (err) {
+    console.error('Failed to load changes from server:', err);
+  }
+  applyScoreOverrides();
   renderTree();
   renderProfiles();
   renderCompare();
@@ -1002,6 +1341,7 @@ function switchView(view) {
   document.querySelectorAll('.nav-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.view === view);
   });
+  if (view === 'changelog') renderChangeLog();
 }
 
 // ── Tree Rendering ──
@@ -1122,20 +1462,31 @@ function renderDetail(node, path) {
       const company = COMPANIES[key];
       const scoreColor = data.score >= 8 ? 'score-color-high' : data.score >= 6 ? 'score-color-mid' : 'score-color-low';
 
+      const hasOverride = scoreOverrides[`${node.id}::${key}`];
       html += `
-        <div class="score-card ${key}">
-          <div class="score-card-header">
+        <div class="score-card expanded ${key}">
+          <div class="score-card-header" onclick="this.parentElement.classList.toggle('expanded')">
             <span class="score-company-name ${key}">${company.name}</span>
-            <span class="score-badge ${scoreColor}">${data.score.toFixed(1)}</span>
+            <div style="display:flex;align-items:center;gap:8px;">
+              ${hasOverride ? '<span class="edit-indicator" title="Score has been manually edited">edited</span>' : ''}
+              <span class="score-badge ${scoreColor}">${data.score.toFixed(1)}</span>
+              <button class="edit-score-btn" onclick="event.stopPropagation(); openEditModal('${node.id}', '${key}')" title="Edit score">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </button>
+              <svg class="score-card-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </div>
           </div>
-          <div class="score-bar">
-            <div class="score-bar-fill ${key}" style="width: ${data.score * 10}%"></div>
-          </div>
-          <div class="score-rationale">${data.rationale}</div>
-          <div class="score-actions">
-            <button class="score-action-btn primary" onclick="openAI('improve', '${key}', '${node.id}')">Improve Score</button>
-            <button class="score-action-btn" onclick="openAI('actions', '${key}', '${node.id}')">Suggest Actions</button>
-            <button class="score-action-btn" onclick="openAI('challenge', '${key}', '${node.id}')">Challenge</button>
+          <div class="score-card-body">
+            <div class="score-bar">
+              <div class="score-bar-fill ${key}" style="width: ${data.score * 10}%"></div>
+            </div>
+            <div class="score-rationale">${data.rationale}</div>
+            ${renderInlineHistory(node.id, key)}
+            <div class="score-actions">
+              <button class="score-action-btn primary" onclick="openAI('improve', '${key}', '${node.id}')">Improve Score</button>
+              <button class="score-action-btn" onclick="openAI('actions', '${key}', '${node.id}')">Suggest Actions</button>
+              <button class="score-action-btn" onclick="openAI('challenge', '${key}', '${node.id}')">Challenge</button>
+            </div>
           </div>
         </div>
       `;
@@ -1161,18 +1512,23 @@ function renderDetail(node, path) {
         const scoreColor = score >= 8 ? 'score-color-high' : score >= 6 ? 'score-color-mid' : 'score-color-low';
 
         html += `
-          <div class="score-card ${key}">
-            <div class="score-card-header">
+          <div class="score-card expanded ${key}">
+            <div class="score-card-header" onclick="this.parentElement.classList.toggle('expanded')">
               <span class="score-company-name ${key}">${company.name}</span>
-              <span class="score-badge ${scoreColor}">${score.toFixed(1)}</span>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span class="score-badge ${scoreColor}">${score.toFixed(1)}</span>
+                <svg class="score-card-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+              </div>
             </div>
-            <div class="score-bar">
-              <div class="score-bar-fill ${key}" style="width: ${score * 10}%"></div>
-            </div>
-            <div class="score-rationale">Weighted average across ${countLeafNodes(node)} evaluation criteria in this category.</div>
-            <div class="score-actions">
-              <button class="score-action-btn primary" onclick="openAI('analyze', '${key}', '${node.id}')">Deep Analysis</button>
-              <button class="score-action-btn" onclick="openAI('strategy', '${key}', '${node.id}')">Win Strategy</button>
+            <div class="score-card-body">
+              <div class="score-bar">
+                <div class="score-bar-fill ${key}" style="width: ${score * 10}%"></div>
+              </div>
+              <div class="score-rationale">Weighted average across ${countLeafNodes(node)} evaluation criteria in this category.</div>
+              <div class="score-actions">
+                <button class="score-action-btn primary" onclick="openAI('analyze', '${key}', '${node.id}')">Deep Analysis</button>
+                <button class="score-action-btn" onclick="openAI('strategy', '${key}', '${node.id}')">Win Strategy</button>
+              </div>
             </div>
           </div>
         `;
@@ -1414,6 +1770,17 @@ function findNode(tree, id) {
   if (tree.children) {
     for (const child of tree.children) {
       const found = findNode(child, id);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+function findParent(tree, id) {
+  if (tree.children) {
+    for (const child of tree.children) {
+      if (child.id === id) return tree;
+      const found = findParent(child, id);
       if (found) return found;
     }
   }
