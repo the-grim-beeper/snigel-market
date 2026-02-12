@@ -8,6 +8,24 @@ const API_KEY = process.env.ANTHROPIC_API_KEY || '';
 
 const app = express();
 app.use(express.json({ limit: '10mb' }));
+
+// ── Password protection ──
+// Set SITE_PASSWORD env var on Railway, or leave empty to disable
+const SITE_PASSWORD = process.env.SITE_PASSWORD || '';
+
+if (SITE_PASSWORD) {
+  app.use((req, res, next) => {
+    const auth = req.headers.authorization;
+    if (auth) {
+      const [, encoded] = auth.split(' ');
+      const [, password] = Buffer.from(encoded, 'base64').toString().split(':');
+      if (password === SITE_PASSWORD) return next();
+    }
+    res.set('WWW-Authenticate', 'Basic realm="Luleå-Class Decision Tool"');
+    res.status(401).send('Access denied');
+  });
+}
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 const anthropic = new Anthropic(API_KEY ? { apiKey: API_KEY } : undefined);
