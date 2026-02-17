@@ -3127,79 +3127,253 @@ li.weakness::marker { color: var(--red); }
 }
 
 .personas-layout {
-  padding: 24px;
-  max-width: 1200px;
+  padding: 24px 28px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
-.persona-selector {
+.personas-header {
   display: flex;
-  gap: 10px;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+  animation: fadeInUp 0.3s ease;
 }
 
-.persona-btn {
-  padding: 10px 18px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--bg-card);
-  color: var(--text);
-  cursor: pointer;
+.personas-header-text h2 {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: 4px;
+}
+
+.personas-header-text p {
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+.persona-add-btn {
   display: flex;
   align-items: center;
   gap: 8px;
+  padding: 10px 20px;
+  background: transparent;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  color: var(--accent);
   font-family: var(--font-body);
-  font-size: 13px;
-  transition: all 0.2s;
-}
-
-.persona-btn:hover {
-  border-color: var(--border-accent);
-  background: var(--accent-glow);
-}
-
-.persona-btn.active {
-  background: var(--accent);
-  color: #070B11;
-  border-color: var(--accent);
+  font-size: 12px;
   font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
-.persona-icon { font-size: 18px; }
+.persona-add-btn:hover {
+  background: var(--accent);
+  color: var(--bg);
+  box-shadow: 0 0 20px rgba(212, 168, 67, 0.15);
+}
 
-.persona-detail {
+/* ── Persona Cards Grid ── */
+.persona-cards-grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  gap: 20px;
+  animation: fadeInUp 0.4s ease;
 }
 
-.persona-info { margin-bottom: 16px; }
+.persona-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  position: relative;
+}
 
-.persona-info h3 {
+.persona-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-light), transparent);
+}
+
+.persona-card:hover {
+  border-color: var(--border-light);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+
+.persona-card.expanded {
+  border-color: var(--accent);
+  box-shadow: 0 0 30px rgba(212, 168, 67, 0.08);
+}
+
+.persona-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 20px 20px 14px;
+}
+
+.persona-card-icon {
+  font-size: 36px;
+  line-height: 1;
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(212, 168, 67, 0.06);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+.persona-card-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.persona-card-title h3 {
   font-family: var(--font-display);
-  font-size: 20px;
+  font-size: 17px;
   font-weight: 700;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
+  letter-spacing: -0.01em;
 }
 
-.persona-info p {
+.persona-card-title p {
+  font-size: 12px;
   color: var(--text-dim);
+  line-height: 1.5;
+}
+
+.persona-card-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.persona-action-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.persona-action-icon:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(212, 168, 67, 0.06);
+}
+
+.persona-action-icon.danger:hover {
+  border-color: var(--red);
+  color: var(--red);
+  background: rgba(255, 107, 107, 0.06);
+}
+
+/* ── Persona Stats Row ── */
+.persona-card-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  margin: 0 20px;
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.persona-stat {
+  text-align: center;
+  padding: 4px 0;
+}
+
+.persona-stat-value {
+  font-family: var(--font-mono);
   font-size: 14px;
-  line-height: 1.65;
+  font-weight: 700;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.persona-stat-value.snigel-good { color: var(--green); }
+.persona-stat-value.snigel-warn { color: var(--amber); }
+
+.persona-stat-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ── Persona Criteria Badges ── */
+.persona-card-criteria {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 14px 20px;
+}
+
+.persona-weight-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 100px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  border: 1px solid var(--border);
+  background: rgba(80, 96, 112, 0.04);
+  color: var(--text-dim);
+}
+
+.persona-weight-badge.w3 {
+  border-color: var(--accent);
+  background: rgba(212, 168, 67, 0.08);
+  color: var(--accent);
+}
+
+.persona-weight-badge.w2 {
+  border-color: rgba(212, 168, 67, 0.4);
+  color: var(--text);
+}
+
+/* ── Expanded Card Content ── */
+.persona-card-expanded {
+  padding: 0 20px 20px;
+  animation: fadeInUp 0.3s ease;
 }
 
 .persona-rankings {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
+  margin-bottom: 16px;
 }
 
 .persona-rank-row {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 8px 14px;
+  padding: 7px 12px;
   border-radius: var(--radius);
   background: rgba(80,96,112,0.04);
   border: 1px solid transparent;
@@ -3213,15 +3387,15 @@ li.weakness::marker { color: var(--red); }
 
 .persona-rank {
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--text-muted);
-  min-width: 30px;
+  min-width: 28px;
 }
 
 .persona-bar {
   flex: 1;
-  height: 6px;
+  height: 5px;
   background: rgba(80,96,112,0.12);
   border-radius: 3px;
   overflow: hidden;
@@ -3230,41 +3404,270 @@ li.weakness::marker { color: var(--red); }
 .persona-score {
   font-family: var(--font-mono);
   font-weight: 700;
-  font-size: 14px;
+  font-size: 13px;
   min-width: 35px;
   text-align: right;
 }
 
-.persona-criteria { margin-top: 20px; }
+.persona-card-chat-prompt {
+  display: flex;
+  justify-content: center;
+  padding-top: 4px;
+}
 
-.persona-criteria h4 {
+.persona-chat-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  background: transparent;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  color: var(--accent);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.persona-chat-btn:hover {
+  background: var(--accent);
+  color: var(--bg);
+  box-shadow: 0 0 20px rgba(212, 168, 67, 0.15);
+}
+
+/* ── Persona Modal ── */
+.persona-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.95);
+  width: 600px;
+  max-width: 92vw;
+  max-height: 85vh;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  z-index: 1001;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.2s ease;
+}
+
+.persona-modal.open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.persona-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.persona-modal-header h3 {
   font-family: var(--font-display);
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 700;
-  margin-bottom: 12px;
-  color: var(--text-muted);
+}
+
+.persona-modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.persona-modal-ai-section {
+  margin-bottom: 16px;
+}
+
+.persona-modal-ai-section label {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
+  color: var(--accent);
+  display: block;
+  margin-bottom: 4px;
 }
 
-.persona-criterion {
+.persona-modal-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.persona-modal-ai-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.persona-modal-ai-row textarea {
+  flex: 1;
+  padding: 10px 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 13px;
+  resize: none;
+}
+
+.persona-modal-ai-row textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.persona-ai-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius);
+  color: var(--bg);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.persona-ai-btn:hover { opacity: 0.9; }
+.persona-ai-btn:disabled { opacity: 0.5; cursor: wait; }
+
+.persona-modal-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 16px 0;
+}
+
+.persona-modal-fields label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+  display: block;
+  margin-bottom: 6px;
+}
+
+.persona-modal-field {
+  margin-bottom: 14px;
+}
+
+.persona-modal-row {
   display: flex;
   gap: 12px;
-  padding: 5px 0;
+  margin-bottom: 14px;
+}
+
+.persona-modal-field input,
+.persona-modal-field textarea {
+  width: 100%;
+  padding: 9px 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font-body);
   font-size: 13px;
 }
 
-.persona-criterion-weight {
-  font-family: var(--font-mono);
-  color: var(--accent);
-  letter-spacing: 2px;
-  min-width: 40px;
+.persona-modal-field input:focus,
+.persona-modal-field textarea:focus {
+  outline: none;
+  border-color: var(--accent);
 }
 
-.persona-placeholder {
+.persona-icon-input {
   text-align: center;
-  padding: 60px 20px;
+  font-size: 20px !important;
+  padding: 6px !important;
+}
+
+.persona-modal-weights {
+  max-height: 280px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px;
+}
+
+.persona-weight-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 8px;
+  border-radius: var(--radius);
+  transition: background 0.1s;
+}
+
+.persona-weight-row:hover {
+  background: rgba(80, 96, 112, 0.04);
+}
+
+.persona-weight-label {
+  font-size: 12px;
+  color: var(--text-dim);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.persona-weight-btns {
+  display: flex;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.persona-w-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: transparent;
   color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.persona-w-btn:hover {
+  border-color: var(--border-light);
+  color: var(--text);
+}
+
+.persona-w-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg);
+}
+
+.persona-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
 }
 
 /* ═══════════════════════════════════════════
@@ -3677,6 +4080,8 @@ li.weakness::marker { color: var(--red); }
   .ai-panel { width: 100%; right: -100%; }
   .profile-stats { grid-template-columns: repeat(2, 1fr); }
   .simulator-layout { grid-template-columns: 1fr; }
+  .persona-cards-grid { grid-template-columns: 1fr; }
+  .persona-card-stats { grid-template-columns: repeat(2, 1fr); gap: 8px; }
 
   .header-nav {
     overflow-x: auto;

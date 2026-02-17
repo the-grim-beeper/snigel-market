@@ -11,6 +11,7 @@ const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 const DATA_FILE = path.join(DATA_DIR, 'changes.json');
 const DOCS_FILE = path.join(DATA_DIR, 'documents.json');
 const TREE_FILE = path.join(DATA_DIR, 'tree.json');
+const PERSONAS_FILE = path.join(DATA_DIR, 'personas.json');
 
 // Ensure upload directory exists
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
@@ -42,6 +43,21 @@ function loadDocuments() {
 
 function saveDocuments(docs) {
   fs.writeFileSync(DOCS_FILE, JSON.stringify(docs, null, 2));
+}
+
+// ── Persona persistence ──
+function loadPersonas() {
+  try {
+    if (!fs.existsSync(PERSONAS_FILE)) return null;
+    return JSON.parse(fs.readFileSync(PERSONAS_FILE, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+function savePersonas(personas) {
+  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+  fs.writeFileSync(PERSONAS_FILE, JSON.stringify(personas, null, 2));
 }
 
 // ── Override rebuild logic ──
@@ -501,7 +517,68 @@ Alla barnvikter måste summera till exakt 100%. Behåll alla andra fält oförä
   }
 });
 
+// ── Persona API endpoints ──
+app.get('/api/personas', (req, res) => {
+  const personas = loadPersonas();
+  res.json({ personas });
+});
+
+app.post('/api/personas', (req, res) => {
+  const { personas } = req.body;
+  if (!personas || typeof personas !== 'object') {
+    return res.status(400).json({ error: 'Invalid personas object' });
+  }
+  savePersonas(personas);
+  res.json({ success: true });
+});
+
+app.post('/api/personas/generate', async (req, res) => {
+  try {
+    const { description, leafNodes } = req.body;
+    if (!description) return res.status(400).json({ error: 'description required' });
+
+    const criteriaList = (leafNodes || []).map(n => `- ${n.id}: ${n.label}`).join('\n');
+
+    const prompt = `Du ska skapa en persona (intressentprofil) för ett verktyg som analyserar marknadspositionering inom europeisk taktisk/militär utrustning.
+
+Användaren beskriver personan så här:
+"${description}"
+
+Tillgängliga beslutskriterier (bladnoder i beslutsträdet):
+${criteriaList}
+
+Skapa en persona med följande JSON-format. Välj 3-6 av de tillgängliga kriterierna som viktigast för denna persona, med vikter 1-3 (3 = högst prioritet).
+
+Svara med ENBART JSON:
+{
+  "name": "Kort namn (2-3 ord)",
+  "description": "En mening som beskriver personan och dess prioriteringar",
+  "icon": "En enda passande emoji",
+  "weights": {
+    "kriterium-id": 3,
+    "kriterium-id": 2
+  }
+}`;
+
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-5-20250929',
+      max_tokens: 1024,
+      messages: [{ role: 'user', content: prompt }]
+    });
+
+    const responseText = response.content[0].text;
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return res.status(500).json({ error: 'Failed to parse AI response' });
+
+    const persona = JSON.parse(jsonMatch[0]);
+    res.json({ persona });
+  } catch (error) {
+    console.error('Persona generation error:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
-  console.log(`\n  Snigel Marknadspositioneringsverktyg körs på http://localhost:${PORT}\n`);
+  console.log(`\n  Snigel Marknadspositioneringsverktyg k\u00f6rs p\u00e5 http://localhost:${PORT}\n`);
 });

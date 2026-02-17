@@ -203,6 +203,55 @@
     </div>
   </div>
 
+  <!-- Persona Edit/Add Modal -->
+  <div id="persona-modal-overlay" class="modal-overlay" onclick="closePersonaModal()"></div>
+  <div id="persona-modal" class="persona-modal">
+    <div class="persona-modal-header">
+      <h3 id="persona-modal-title">Skapa ny persona</h3>
+      <button class="close-btn" onclick="closePersonaModal()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="persona-modal-body">
+      <div class="persona-modal-ai-section">
+        <label>AI-generering</label>
+        <p class="persona-modal-hint">Beskriv personan p&aring; svenska s&aring; fyller AI i alla f&auml;lt &aring;t dig.</p>
+        <div class="persona-modal-ai-row">
+          <textarea id="persona-modal-ai-desc" rows="2" placeholder="T.ex. &quot;En inköpschef på ett europeiskt polisväsende som prioriterar pris och snabb leverans&quot;"></textarea>
+          <button id="persona-ai-generate-btn" class="persona-ai-btn" onclick="generatePersonaWithAI()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            Generera
+          </button>
+        </div>
+      </div>
+      <div class="persona-modal-divider"></div>
+      <div class="persona-modal-fields">
+        <div class="persona-modal-row">
+          <div class="persona-modal-field" style="width:60px">
+            <label>Ikon</label>
+            <input type="text" id="persona-modal-icon" value="&#128100;" maxlength="4" class="persona-icon-input">
+          </div>
+          <div class="persona-modal-field" style="flex:1">
+            <label>Namn</label>
+            <input type="text" id="persona-modal-name" placeholder="T.ex. Ink&ouml;pschefen">
+          </div>
+        </div>
+        <div class="persona-modal-field">
+          <label>Beskrivning</label>
+          <textarea id="persona-modal-desc" rows="2" placeholder="Kort beskrivning av personans roll och prioriteringar..."></textarea>
+        </div>
+        <div class="persona-modal-field">
+          <label>Beslutskriterier <span class="persona-modal-hint">(0 = irrelevant, 3 = h&ouml;gsta prioritet)</span></label>
+          <div id="persona-modal-weights" class="persona-modal-weights"></div>
+        </div>
+      </div>
+      <div class="persona-modal-actions">
+        <button class="score-action-btn" onclick="closePersonaModal()">Avbryt</button>
+        <button class="score-action-btn primary" onclick="savePersonaFromModal()">Spara persona</button>
+      </div>
+    </div>
+  </div>
+
   <script src="app.js"></script>
 </body>
 </html>

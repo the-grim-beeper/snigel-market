@@ -600,7 +600,7 @@ const COMPANIES = {
   }
 };
 
-const PERSONAS = {
+const DEFAULT_PERSONAS = {
   "upphandlare": { name: "Upphandlaren", description: "Offentlig upphandlare \u2014 prioriterar certifieringar, pris, leveranss\u00e4kerhet och compliance.", icon: "\ud83d\udccb",
     weights: { "cert-iso": 3, "cert-mil": 3, "supply-volym": 2, "marknad-b2g": 2, "varumarke-ref": 1 }
   },
@@ -614,6 +614,7 @@ const PERSONAS = {
     weights: { "finans-tillvaxt": 3, "marknad-geo": 2, "innov-ergo": 2, "finans-omsattning": 2, "varumarke-rykte": 1 }
   }
 };
+let PERSONAS = JSON.parse(JSON.stringify(DEFAULT_PERSONAS));
 
 const SCENARIOS = [
   { id: "a", label: "Scenario A", title: "Aggressiv Tysk Expansion \u2014 DACH-fokus", cssClass: "scenario-a",
@@ -1189,83 +1190,341 @@ async function runScenarioAnalysis(scenarioText) {
 // ── Personas View ──
 // Security note: All user-facing text is sanitized through escapeHtml()
 // before DOM insertion. The innerHTML usage renders app-controlled templates only.
+let personaEditingKey = null;
+
 function renderPersonas() {
   const container = document.getElementById('personas-container');
   let html = '<div class="personas-layout">';
 
-  // Persona selector
-  html += '<div class="persona-selector">';
+  // Header with add button
+  html += `<div class="personas-header">
+    <div class="personas-header-text">
+      <h2>Intressentpersonas</h2>
+      <p>Utforska hur olika intressenter v\u00e4rderar konkurrenterna baserat p\u00e5 sina unika prioriteringar.</p>
+    </div>
+    <div class="personas-header-actions">
+      <button class="persona-add-btn" onclick="openAddPersonaModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        L\u00e4gg till persona
+      </button>
+    </div>
+  </div>`;
+
+  // Persona cards grid
+  html += '<div class="persona-cards-grid">';
   for (const [key, persona] of Object.entries(PERSONAS)) {
-    html += `<button class="persona-btn ${selectedPersona === key ? 'active' : ''}" onclick="selectPersona('${key}')">
-      <span class="persona-icon">${persona.icon}</span>
-      <span class="persona-name">${escapeHtml(persona.name)}</span>
-    </button>`;
-  }
-  html += '</div>';
+    const isSelected = selectedPersona === key;
 
-  if (selectedPersona && PERSONAS[selectedPersona]) {
-    const persona = PERSONAS[selectedPersona];
-    html += `<div class="persona-detail">
-      <div class="persona-info">
-        <h3>${persona.icon} ${escapeHtml(persona.name)}</h3>
-        <p>${escapeHtml(persona.description)}</p>
-      </div>`;
-
-    // Calculate weighted scores per company for this persona
+    // Calculate weighted scores for this persona
     const personaScores = {};
-    for (const key of companyKeys) {
+    for (const ck of companyKeys) {
       let totalWeight = 0;
       let weightedSum = 0;
       for (const [nodeId, weight] of Object.entries(persona.weights)) {
         const node = findNode(DECISION_TREE, nodeId);
-        if (node?.scores?.[key]) {
-          weightedSum += node.scores[key].score * weight;
+        if (node?.scores?.[ck]) {
+          weightedSum += node.scores[ck].score * weight;
           totalWeight += weight;
         }
       }
-      personaScores[key] = totalWeight > 0 ? weightedSum / totalWeight : 0;
+      personaScores[ck] = totalWeight > 0 ? weightedSum / totalWeight : 0;
     }
-
-    // Sort and display
     const sorted = companyKeys.map(k => ({ key: k, score: personaScores[k] })).sort((a, b) => b.score - a.score);
+    const topCompany = sorted[0];
+    const snigelRank = sorted.findIndex(s => s.key === 'snigel') + 1;
+    const snigelScore = personaScores['snigel'];
 
-    html += '<div class="persona-rankings">';
-    for (let i = 0; i < sorted.length; i++) {
-      const s = sorted[i];
-      const c = COMPANIES[s.key];
-      const pct = (s.score / 10) * 100;
-      html += `<div class="persona-rank-row ${s.key === 'snigel' ? 'highlight' : ''}">
-        <span class="persona-rank">#${i + 1}</span>
-        <span class="score-company-name ${s.key}">${escapeHtml(c.name)}</span>
-        <div class="persona-bar"><div class="score-bar-fill ${s.key}" style="width:${pct}%"></div></div>
-        <span class="persona-score">${s.score.toFixed(1)}</span>
-      </div>`;
+    html += `<div class="persona-card ${isSelected ? 'expanded' : ''}" onclick="selectPersona('${escapeHtml(key)}')">`;
+
+    // Card header
+    html += `<div class="persona-card-header">
+      <div class="persona-card-icon">${persona.icon}</div>
+      <div class="persona-card-title">
+        <h3>${escapeHtml(persona.name)}</h3>
+        <p>${escapeHtml(persona.description)}</p>
+      </div>
+      <div class="persona-card-actions" onclick="event.stopPropagation()">
+        <button class="persona-action-icon" onclick="openPersonaChat('${escapeHtml(key)}')" title="Chatta med persona">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        </button>
+        <button class="persona-action-icon" onclick="editPersona('${escapeHtml(key)}')" title="Redigera">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="persona-action-icon danger" onclick="deletePersona('${escapeHtml(key)}')" title="Radera">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+        </button>
+      </div>
+    </div>`;
+
+    // Quick stats row
+    html += `<div class="persona-card-stats">
+      <div class="persona-stat">
+        <span class="persona-stat-value score-company-name ${topCompany.key}">#1 ${escapeHtml(COMPANIES[topCompany.key].name)}</span>
+        <span class="persona-stat-label">Topprankad</span>
+      </div>
+      <div class="persona-stat">
+        <span class="persona-stat-value">${topCompany.score.toFixed(1)}</span>
+        <span class="persona-stat-label">H\u00f6gsta po\u00e4ng</span>
+      </div>
+      <div class="persona-stat">
+        <span class="persona-stat-value ${snigelRank <= 3 ? 'snigel-good' : 'snigel-warn'}">#${snigelRank}</span>
+        <span class="persona-stat-label">Snigel ranking</span>
+      </div>
+      <div class="persona-stat">
+        <span class="persona-stat-value">${snigelScore.toFixed(1)}</span>
+        <span class="persona-stat-label">Snigel po\u00e4ng</span>
+      </div>
+    </div>`;
+
+    // Criteria badges
+    html += '<div class="persona-card-criteria">';
+    const sortedWeights = Object.entries(persona.weights).sort((a, b) => b[1] - a[1]);
+    for (const [nodeId, weight] of sortedWeights) {
+      const node = findNode(DECISION_TREE, nodeId);
+      if (node) {
+        html += `<span class="persona-weight-badge w${weight}">${escapeHtml(node.label)}</span>`;
+      }
     }
     html += '</div>';
 
-    // Show which criteria matter for this persona
-    html += '<div class="persona-criteria"><h4>Viktiga beslutskriterier</h4>';
-    for (const [nodeId, weight] of Object.entries(persona.weights)) {
-      const node = findNode(DECISION_TREE, nodeId);
-      if (node) {
-        const dots = '\u2588'.repeat(weight);
-        html += `<div class="persona-criterion">
-          <span class="persona-criterion-weight">${dots}</span>
-          <span class="persona-criterion-label">${escapeHtml(node.label)}</span>
+    // Expanded content: full ranking
+    if (isSelected) {
+      html += '<div class="persona-card-expanded">';
+
+      // Full ranking table
+      html += '<div class="persona-rankings">';
+      for (let i = 0; i < sorted.length; i++) {
+        const s = sorted[i];
+        const c = COMPANIES[s.key];
+        const pct = (s.score / 10) * 100;
+        html += `<div class="persona-rank-row ${s.key === 'snigel' ? 'highlight' : ''}">
+          <span class="persona-rank">#${i + 1}</span>
+          <span class="score-company-name ${s.key}">${escapeHtml(c.name)}</span>
+          <div class="persona-bar"><div class="score-bar-fill ${s.key}" style="width:${pct}%"></div></div>
+          <span class="persona-score">${s.score.toFixed(1)}</span>
         </div>`;
       }
+      html += '</div>';
+
+      // Chat button
+      html += `<div class="persona-card-chat-prompt" onclick="event.stopPropagation()">
+        <button class="persona-chat-btn" onclick="openPersonaChat('${escapeHtml(key)}')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          Chatta med ${escapeHtml(persona.name)}
+        </button>
+      </div>`;
+
+      html += '</div>';
     }
-    html += '</div></div>';
-  } else {
-    html += '<div class="persona-placeholder"><p>Välj en persona ovan för att se hur olika intressenter bedömer varje företag.</p></div>';
+
+    html += '</div>';
   }
+  html += '</div>';
 
   html += '</div>';
-  container.innerHTML = html; // Safe: all dynamic content escaped via escapeHtml()
+  container.innerHTML = html;
 }
 
 function selectPersona(key) {
-  selectedPersona = key;
+  selectedPersona = selectedPersona === key ? null : key;
+  renderPersonas();
+}
+
+function openPersonaChat(personaKey) {
+  aiNodeContext = null;
+  aiCompanyContext = null;
+  const persona = PERSONAS[personaKey];
+  if (!persona) return;
+
+  aiMessages = [];
+
+  const label = document.getElementById('ai-context-label');
+  if (label) label.textContent = `Persona: ${persona.name}`;
+
+  document.getElementById('ai-panel').classList.add('open');
+  document.getElementById('ai-overlay').classList.add('open');
+
+  // Build persona context for the AI
+  const personaScores = {};
+  for (const ck of companyKeys) {
+    let totalWeight = 0;
+    let weightedSum = 0;
+    for (const [nodeId, weight] of Object.entries(persona.weights)) {
+      const node = findNode(DECISION_TREE, nodeId);
+      if (node?.scores?.[ck]) {
+        weightedSum += node.scores[ck].score * weight;
+        totalWeight += weight;
+      }
+    }
+    personaScores[ck] = totalWeight > 0 ? weightedSum / totalWeight : 0;
+  }
+  const sorted = companyKeys.map(k => ({ key: k, score: personaScores[k] })).sort((a, b) => b.score - a.score);
+  const rankingText = sorted.map((s, i) => `#${i + 1} ${COMPANIES[s.key].name}: ${s.score.toFixed(1)}`).join(', ');
+
+  const criteriaText = Object.entries(persona.weights)
+    .sort((a, b) => b[1] - a[1])
+    .map(([nodeId, w]) => {
+      const node = findNode(DECISION_TREE, nodeId);
+      return node ? `${node.label} (vikt ${w})` : null;
+    }).filter(Boolean).join(', ');
+
+  // Store persona context for sendMessage
+  window._personaChatContext = `Persona: ${persona.name} \u2014 ${persona.description}. Prioriterade kriterier: ${criteriaText}. Ranking enligt denna persona: ${rankingText}.`;
+
+  // Quick actions
+  const qa = document.getElementById('ai-quick-actions');
+  if (qa) {
+    const actions = [
+      `Varf\u00f6r rankas Snigel som #${sorted.findIndex(s => s.key === 'snigel') + 1}?`,
+      `Vad borde Snigel f\u00f6rb\u00e4ttra f\u00f6r ${persona.name}?`,
+      `J\u00e4mf\u00f6r topp 3 ur ${persona.name}s perspektiv`,
+      `Strategiska rekommendationer f\u00f6r denna intressent`
+    ];
+    qa.innerHTML = actions
+      .map(q => `<button class="ai-quick-btn" onclick="sendQuickMessage('${escapeHtml(q)}')">${escapeHtml(q)}</button>`)
+      .join('');
+  }
+
+  renderAIMessages();
+}
+
+async function savePersonasToServer() {
+  try {
+    await fetch('/api/personas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ personas: PERSONAS })
+    });
+  } catch (err) {
+    console.error('Failed to save personas:', err);
+  }
+}
+
+function openAddPersonaModal() {
+  personaEditingKey = null;
+  document.getElementById('persona-modal-title').textContent = 'Skapa ny persona';
+  document.getElementById('persona-modal-name').value = '';
+  document.getElementById('persona-modal-desc').value = '';
+  document.getElementById('persona-modal-icon').value = '\ud83d\udc64';
+  document.getElementById('persona-modal-ai-desc').value = '';
+
+  // Render weight selectors
+  window._tempPersonaWeights = {};
+  renderPersonaWeightEditor({});
+
+  document.getElementById('persona-modal-overlay').classList.add('open');
+  document.getElementById('persona-modal').classList.add('open');
+}
+
+function editPersona(key) {
+  const persona = PERSONAS[key];
+  if (!persona) return;
+  personaEditingKey = key;
+  document.getElementById('persona-modal-title').textContent = 'Redigera persona';
+  document.getElementById('persona-modal-name').value = persona.name;
+  document.getElementById('persona-modal-desc').value = persona.description;
+  document.getElementById('persona-modal-icon').value = persona.icon;
+  document.getElementById('persona-modal-ai-desc').value = '';
+
+  window._tempPersonaWeights = JSON.parse(JSON.stringify(persona.weights || {}));
+  renderPersonaWeightEditor(window._tempPersonaWeights);
+
+  document.getElementById('persona-modal-overlay').classList.add('open');
+  document.getElementById('persona-modal').classList.add('open');
+}
+
+function closePersonaModal() {
+  document.getElementById('persona-modal-overlay').classList.remove('open');
+  document.getElementById('persona-modal').classList.remove('open');
+}
+
+function renderPersonaWeightEditor(weights) {
+  const container = document.getElementById('persona-modal-weights');
+  const leaves = collectLeafNodes(DECISION_TREE);
+  let html = '';
+  for (const leaf of leaves) {
+    const w = weights[leaf.id] || 0;
+    html += `<div class="persona-weight-row">
+      <span class="persona-weight-label">${escapeHtml(leaf.label)}</span>
+      <div class="persona-weight-btns">
+        ${[0, 1, 2, 3].map(v =>
+          `<button class="persona-w-btn ${w === v ? 'active' : ''}" onclick="setPersonaWeight('${escapeHtml(leaf.id)}', ${v})">${v === 0 ? '\u2014' : v}</button>`
+        ).join('')}
+      </div>
+    </div>`;
+  }
+  container.innerHTML = html;
+}
+
+function setPersonaWeight(nodeId, value) {
+  // Update the active state visually and store in a temp object
+  if (!window._tempPersonaWeights) window._tempPersonaWeights = {};
+  if (value === 0) {
+    delete window._tempPersonaWeights[nodeId];
+  } else {
+    window._tempPersonaWeights[nodeId] = value;
+  }
+  renderPersonaWeightEditor(window._tempPersonaWeights);
+}
+
+function savePersonaFromModal() {
+  const name = document.getElementById('persona-modal-name').value.trim();
+  const desc = document.getElementById('persona-modal-desc').value.trim();
+  const icon = document.getElementById('persona-modal-icon').value.trim() || '\ud83d\udc64';
+  const weights = window._tempPersonaWeights || {};
+
+  if (!name) { alert('Namn kr\u00e4vs'); return; }
+  if (Object.keys(weights).length === 0) { alert('V\u00e4lj minst ett kriterium'); return; }
+
+  const key = personaEditingKey || `persona-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  PERSONAS[key] = { name, description: desc, icon, weights };
+
+  savePersonasToServer();
+  closePersonaModal();
+  window._tempPersonaWeights = null;
+  renderPersonas();
+}
+
+async function generatePersonaWithAI() {
+  const desc = document.getElementById('persona-modal-ai-desc').value.trim();
+  if (!desc) { alert('Beskriv personan f\u00f6r AI-generering'); return; }
+
+  const btn = document.getElementById('persona-ai-generate-btn');
+  const origText = btn.textContent;
+  btn.textContent = 'Genererar...';
+  btn.disabled = true;
+
+  try {
+    const leaves = collectLeafNodes(DECISION_TREE);
+    const res = await fetch('/api/personas/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ description: desc, leafNodes: leaves })
+    });
+    if (!res.ok) { throw new Error('AI-generering misslyckades'); }
+    const data = await res.json();
+    const p = data.persona;
+
+    document.getElementById('persona-modal-name').value = p.name || '';
+    document.getElementById('persona-modal-desc').value = p.description || '';
+    document.getElementById('persona-modal-icon').value = p.icon || '\ud83d\udc64';
+    window._tempPersonaWeights = p.weights || {};
+    renderPersonaWeightEditor(window._tempPersonaWeights);
+  } catch (err) {
+    alert('Kunde inte generera persona: ' + err.message);
+  } finally {
+    btn.textContent = origText;
+    btn.disabled = false;
+  }
+}
+
+async function deletePersona(key) {
+  const persona = PERSONAS[key];
+  if (!persona) return;
+  if (!confirm(`Radera personan "${persona.name}"?`)) return;
+  delete PERSONAS[key];
+  if (selectedPersona === key) selectedPersona = null;
+  await savePersonasToServer();
   renderPersonas();
 }
 
@@ -2036,6 +2295,7 @@ function closeAIPanel() {
   document.getElementById('ai-panel').classList.remove('open');
   document.getElementById('ai-overlay').classList.remove('open');
   aiCompanyContext = null;
+  window._personaChatContext = null;
 }
 
 function sendQuickMessage(text) {
@@ -2098,6 +2358,11 @@ async function sendMessage() {
         context += `(Snigel Design AB totalpo\u00e4ng: ${snigelOverall !== null ? snigelOverall.toFixed(1) : 'ej bed\u00f6md'}/10 f\u00f6r j\u00e4mf\u00f6relse.)`;
       }
     }
+  }
+
+  // Persona context (from openPersonaChat)
+  if (!context && window._personaChatContext) {
+    context = window._personaChatContext;
   }
 
   // Show typing indicator
@@ -2246,6 +2511,17 @@ async function init() {
     documents = docsData.documents || [];
   } catch (e) {
     console.error('Failed to load documents:', e);
+  }
+
+  // Load persisted personas
+  try {
+    const personasRes = await fetch('/api/personas');
+    const personasData = await personasRes.json();
+    if (personasData.personas) {
+      PERSONAS = personasData.personas;
+    }
+  } catch (e) {
+    console.error('Failed to load personas:', e);
   }
 
   renderTree();
