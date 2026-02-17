@@ -1,10 +1,13 @@
 {
-  "name": "lulea-decision-tool",
+  "name": "snigel-market",
   "version": "1.0.0",
-  "description": "Decision modeling tool for Sweden's Luleå-class surface combatant procurement",
+  "description": "Marknadspositionering och konkurrensanalys för Snigel Design AB",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
