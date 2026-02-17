@@ -824,7 +824,7 @@ function renderDetail(node) {
     <div class="detail-actions">
       <button class="ai-trigger-btn" onclick="openAIPanel('${node.id}')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-        Discuss with AI
+        Diskutera med AI
       </button>
     </div>
   `;
@@ -862,7 +862,7 @@ function renderScoreCards(node) {
           <span class="score-rank">#${rank + 1}</span>
           <span class="score-company-name ${key}">${escapeHtml(company.name)}</span>
           <span class="score-country">${escapeHtml(company.country)}</span>
-          <button class="score-edit-btn" onclick="openEditModal('${node.id}', '${key}')" title="Edit score">
+          <button class="score-edit-btn" onclick="openEditModal('${node.id}', '${key}')" title="Redigera">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           </button>
         </div>
@@ -920,7 +920,7 @@ function renderProfiles() {
       </div>
       <p class="profile-platform">${escapeHtml(c.platform)}</p>
       <div class="profile-overall">
-        <span class="profile-overall-label">Overall</span>
+        <span class="profile-overall-label">Totalpoäng</span>
         <span class="profile-overall-score">${overallScore !== null ? overallScore.toFixed(1) : '\u2014'}</span>
       </div>
     </div>`;
@@ -947,12 +947,12 @@ function renderProfiles() {
 
     // Strengths/Weaknesses
     if (c.strengths?.length) {
-      html += '<div class="profile-section"><h4>Strengths</h4><ul>';
+      html += '<div class="profile-section"><h4>Styrkor</h4><ul>';
       for (const s of c.strengths) html += `<li class="strength">${escapeHtml(s)}</li>`;
       html += '</ul></div>';
     }
     if (c.weaknesses?.length) {
-      html += '<div class="profile-section"><h4>Weaknesses</h4><ul>';
+      html += '<div class="profile-section"><h4>Svagheter</h4><ul>';
       for (const w of c.weaknesses) html += `<li class="weakness">${escapeHtml(w)}</li>`;
       html += '</ul></div>';
     }
@@ -970,7 +970,7 @@ function renderCompare() {
   let html = '<div class="compare-table-wrapper"><table class="compare-table">';
 
   // Header
-  html += '<thead><tr><th class="compare-node-col">Criterion</th>';
+  html += '<thead><tr><th class="compare-node-col">Kriterium</th>';
   for (const key of companyKeys) {
     const c = COMPANIES[key];
     html += `<th class="compare-company-col"><span class="score-company-name ${key}">${escapeHtml(c.name)}</span></th>`;
@@ -978,7 +978,7 @@ function renderCompare() {
   html += '</tr></thead><tbody>';
 
   // Overall
-  html += '<tr class="compare-overall"><td><strong>Overall Score</strong></td>';
+  html += '<tr class="compare-overall"><td><strong>Totalpoäng</strong></td>';
   for (const key of companyKeys) {
     const s = collectScores(DECISION_TREE, key);
     html += `<td class="compare-score"><strong>${s !== null ? s.toFixed(1) : '\u2014'}</strong></td>`;
@@ -1026,18 +1026,18 @@ function renderScenarios() {
         </div>
         <div class="scenario-body">
           <div class="scenario-section">
-            <h4>Expected Outcome</h4>
+            <h4>Förväntat utfall</h4>
             <p>${escapeHtml(scenario.outcome)}</p>
           </div>
           <div class="scenario-section">
-            <h4>Key Risks</h4>
+            <h4>Nyckelrisker</h4>
             <p>${escapeHtml(scenario.risk)}</p>
           </div>
         </div>
         <div class="scenario-actions">
           <button class="scenario-analyze-btn" onclick="analyzeScenario('${scenario.id}')">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-            AI Impact Analysis
+            AI-konsekvensanalys
           </button>
         </div>
       </div>
@@ -1048,16 +1048,16 @@ function renderScenarios() {
   html += `
     <div class="scenario-card scenario-custom">
       <div class="scenario-header">
-        <span class="scenario-label">Custom</span>
-        <h3>Custom Scenario Analysis</h3>
+        <span class="scenario-label">Eget</span>
+        <h3>Egen scenarioanalys</h3>
       </div>
       <div class="scenario-body">
-        <textarea id="custom-scenario-input" rows="4" placeholder="Describe a strategic scenario to analyze..."></textarea>
+        <textarea id="custom-scenario-input" rows="4" placeholder="Beskriv ett strategiskt scenario att analysera..."></textarea>
       </div>
       <div class="scenario-actions">
         <button class="scenario-analyze-btn" onclick="analyzeCustomScenario()">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-          Analyze Custom Scenario
+          Analysera eget scenario
         </button>
       </div>
       <div id="scenario-results" class="scenario-results"></div>
@@ -1078,13 +1078,13 @@ async function analyzeScenario(scenarioId) {
 async function analyzeCustomScenario() {
   const input = document.getElementById('custom-scenario-input');
   const text = input?.value?.trim();
-  if (!text) { alert('Please describe a scenario to analyze.'); return; }
+  if (!text) { alert('Beskriv ett scenario att analysera.'); return; }
   await runScenarioAnalysis(text);
 }
 
 async function runScenarioAnalysis(scenarioText) {
   const resultsDiv = document.getElementById('scenario-results');
-  if (resultsDiv) resultsDiv.textContent = 'Analyzing scenario impact...';
+  if (resultsDiv) resultsDiv.textContent = 'Analyserar scenariopåverkan...';
 
   const leafNodes = collectLeafNodes(DECISION_TREE);
   try {
@@ -1097,7 +1097,7 @@ async function runScenarioAnalysis(scenarioText) {
     const data = await res.json();
 
     if (resultsDiv && data.suggestions?.length) {
-      let html = `<h4>${data.suggestions.length} Projected Score Changes</h4><div class="scenario-suggestions">`;
+      let html = `<h4>${data.suggestions.length} Projicerade poängändringar</h4><div class="scenario-suggestions">`;
       for (const s of data.suggestions) {
         const node = findNode(DECISION_TREE, s.nodeId);
         const companyName = COMPANIES[s.company]?.name || s.company;
@@ -1112,11 +1112,11 @@ async function runScenarioAnalysis(scenarioText) {
       html += '</div>';
       resultsDiv.innerHTML = html;
     } else if (resultsDiv) {
-      resultsDiv.textContent = 'No significant score changes projected.';
+      resultsDiv.textContent = 'Inga betydande poängändringar projicerade.';
     }
   } catch (err) {
     console.error('Scenario analysis error:', err);
-    if (resultsDiv) resultsDiv.textContent = 'Analysis failed. Check API key.';
+    if (resultsDiv) resultsDiv.textContent = 'Analysen misslyckades. Kontrollera API-nyckel.';
   }
 }
 
@@ -1178,7 +1178,7 @@ function renderPersonas() {
     html += '</div>';
 
     // Show which criteria matter for this persona
-    html += '<div class="persona-criteria"><h4>Key Decision Criteria</h4>';
+    html += '<div class="persona-criteria"><h4>Viktiga beslutskriterier</h4>';
     for (const [nodeId, weight] of Object.entries(persona.weights)) {
       const node = findNode(DECISION_TREE, nodeId);
       if (node) {
@@ -1191,7 +1191,7 @@ function renderPersonas() {
     }
     html += '</div></div>';
   } else {
-    html += '<div class="persona-placeholder"><p>Select a persona above to see how different stakeholders perceive each company.</p></div>';
+    html += '<div class="persona-placeholder"><p>Välj en persona ovan för att se hur olika intressenter bedömer varje företag.</p></div>';
   }
 
   html += '</div>';
@@ -1219,11 +1219,11 @@ function renderSimulator() {
 
   let html = '<div class="simulator-layout">';
   html += '<div class="simulator-controls">';
-  html += '<h3>Strategic Movement Simulator</h3>';
-  html += '<p class="simulator-description">Adjust Snigel scores to project impact on overall positioning. Compare current state vs projected state.</p>';
+  html += '<h3>Strategisk rörelsesimulator</h3>';
+  html += '<p class="simulator-description">Justera Snigels poäng för att projicera påverkan på övergripande positionering. Jämför nuläge mot projicerat läge.</p>';
 
   // Reset button
-  html += '<button class="scenario-analyze-btn" onclick="resetSimulator()">Reset to Current</button>';
+  html += '<button class="scenario-analyze-btn" onclick="resetSimulator()">Återställ till nuläge</button>';
 
   // Sliders grouped by pillar
   for (const pillar of DECISION_TREE.children) {
@@ -1264,7 +1264,7 @@ function updateSimVariable(nodeId, value) {
 }
 
 function renderSimResults() {
-  let html = '<h4>Projected Impact</h4>';
+  let html = '<h4>Projicerad påverkan</h4>';
 
   const currentOverall = collectScores(DECISION_TREE, 'snigel');
 
@@ -1293,10 +1293,10 @@ function renderSimResults() {
   const diffClass = diff > 0.1 ? 'positive' : diff < -0.1 ? 'negative' : 'neutral';
 
   html += `<div class="sim-overall-comparison">
-    <div class="sim-metric"><span>Current Overall</span><strong>${currentOverall.toFixed(1)}</strong></div>
+    <div class="sim-metric"><span>Nuvarande totalpoäng</span><strong>${currentOverall.toFixed(1)}</strong></div>
     <div class="sim-arrow">\u2192</div>
-    <div class="sim-metric"><span>Projected</span><strong>${simOverall.toFixed(1)}</strong></div>
-    <div class="sim-metric ${diffClass}"><span>Change</span><strong>${diff > 0 ? '+' : ''}${diff.toFixed(2)}</strong></div>
+    <div class="sim-metric"><span>Projicerad</span><strong>${simOverall.toFixed(1)}</strong></div>
+    <div class="sim-metric ${diffClass}"><span>Förändring</span><strong>${diff > 0 ? '+' : ''}${diff.toFixed(2)}</strong></div>
   </div>`;
 
   // Per-pillar breakdown
@@ -1324,7 +1324,7 @@ function renderSimResults() {
   html += '</div>';
 
   // Ranking impact
-  html += '<h4>Ranking Projection</h4><div class="sim-rankings">';
+  html += '<h4>Rankingprojektion</h4><div class="sim-rankings">';
   const rankings = companyKeys.map(k => {
     if (k === 'snigel') return { key: k, score: simOverall };
     return { key: k, score: collectScores(DECISION_TREE, k) };
@@ -1358,10 +1358,10 @@ function renderVisualizations() {
   const container = document.getElementById('visualizations-container');
   let html = '<div class="viz-layout">';
   html += '<div class="viz-tabs">';
-  html += `<button class="viz-tab ${currentViz === 'radar' ? 'active' : ''}" onclick="showViz('radar')">Radar Chart</button>`;
-  html += `<button class="viz-tab ${currentViz === 'heatmap' ? 'active' : ''}" onclick="showViz('heatmap')">Heatmap</button>`;
-  html += `<button class="viz-tab ${currentViz === 'gap' ? 'active' : ''}" onclick="showViz('gap')">Gap Analysis</button>`;
-  html += `<button class="viz-tab ${currentViz === 'position' ? 'active' : ''}" onclick="showViz('position')">Position Map</button>`;
+  html += `<button class="viz-tab ${currentViz === 'radar' ? 'active' : ''}" onclick="showViz('radar')">Radardiagram</button>`;
+  html += `<button class="viz-tab ${currentViz === 'heatmap' ? 'active' : ''}" onclick="showViz('heatmap')">Värmekarta</button>`;
+  html += `<button class="viz-tab ${currentViz === 'gap' ? 'active' : ''}" onclick="showViz('gap')">Gapanalys</button>`;
+  html += `<button class="viz-tab ${currentViz === 'position' ? 'active' : ''}" onclick="showViz('position')">Positionskarta</button>`;
   html += '</div>';
   html += '<div class="viz-content" id="viz-content"></div>';
   html += '</div>';
@@ -1459,7 +1459,7 @@ function drawPositionMap(container) {
   const yPillar = DECISION_TREE.children.find(p => p.id === 'innov');
 
   if (!xPillar || !yPillar) {
-    container.textContent = 'Cannot render position map: missing pillar data';
+    container.textContent = 'Kan inte rendera positionskarta: pelardata saknas';
     return;
   }
 
@@ -1543,8 +1543,8 @@ function renderGapAnalysis(container) {
   gaps.sort((a, b) => b.gap - a.gap);
 
   let html = '<div class="gap-analysis">';
-  html += '<h3>Snigel Gap Analysis vs. Category Leaders</h3>';
-  html += `<p class="gap-summary">${gaps.length} areas where Snigel trails the category leader.</p>`;
+  html += '<h3>Snigel Gapanalys vs. Kategoriledarare</h3>';
+  html += `<p class="gap-summary">${gaps.length} områden där Snigel släpar efter kategoriledararen.</p>`;
 
   for (const g of gaps) {
     const c = COMPANIES[g.bestKey];
@@ -1571,14 +1571,14 @@ function renderGapAnalysis(container) {
 function renderChangelog() {
   const container = document.getElementById('changelog-container');
   let html = '<div class="changelog-layout">';
-  html += '<div class="changelog-header"><h3>Score Change Log</h3>';
+  html += '<div class="changelog-header"><h3>Ändringslogg för poäng</h3>';
   if (scoreChangeLog.length > 0) {
-    html += '<button class="scenario-analyze-btn" onclick="resetAllChanges()">Reset All Changes</button>';
+    html += '<button class="scenario-analyze-btn" onclick="resetAllChanges()">Återställ alla ändringar</button>';
   }
   html += '</div>';
 
   if (scoreChangeLog.length === 0) {
-    html += '<div class="changelog-empty"><p>No score changes recorded yet. Edit scores in the Decision Tree view to see changes here.</p></div>';
+    html += '<div class="changelog-empty"><p>Inga ändringar registrerade ännu.</p></div>';
   } else {
     html += '<div class="changelog-entries">';
     for (let i = scoreChangeLog.length - 1; i >= 0; i--) {
@@ -1591,7 +1591,7 @@ function renderChangelog() {
           <span class="changelog-node">${escapeHtml(node?.label || e.nodeId)}</span>
           <span class="changelog-scores">${e.oldScore?.toFixed(1) || '?'} \u2192 ${e.newScore?.toFixed(1) || '?'}</span>
           <span class="changelog-date">${e.timestamp ? new Date(e.timestamp).toLocaleDateString() : ''}</span>
-          <button class="doc-delete-btn" onclick="deleteChange(${i})" title="Revert this change">
+          <button class="doc-delete-btn" onclick="deleteChange(${i})" title="Radera">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
           </button>
         </div>
@@ -1606,19 +1606,19 @@ function renderChangelog() {
 }
 
 async function deleteChange(index) {
-  if (!confirm('Revert this score change?')) return;
+  if (!confirm('Återställ denna poängändring?')) return;
   try {
     const res = await fetch(`/api/changes/${index}`, { method: 'DELETE' });
     if (!res.ok) throw new Error('Delete failed');
     location.reload();
   } catch (err) {
     console.error('Delete error:', err);
-    alert('Failed to revert change');
+    alert('Kunde inte återställa ändringen');
   }
 }
 
 async function resetAllChanges() {
-  if (!confirm('Reset ALL score changes? This will revert to the original baseline scores.')) return;
+  if (!confirm('Är du säker? Detta tar bort alla poängändringar.')) return;
   try {
     const res = await fetch('/api/changes/reset', { method: 'POST' });
     if (!res.ok) throw new Error('Reset failed');
@@ -1636,7 +1636,7 @@ function renderDocuments() {
   // Upload area
   html += `<div class="document-upload-area" ondragover="event.preventDefault()" ondrop="event.preventDefault(); handleFileDrop(event)">
     <div class="upload-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
-    <p>Drag a PDF here or <label class="upload-link">browse<input type="file" accept=".pdf" onchange="handleFileSelect(event)" hidden></label></p>
+    <p>Dra en PDF hit eller <label class="upload-link">bläddra<input type="file" accept=".pdf" onchange="handleFileSelect(event)" hidden></label></p>
   </div>`;
 
   // Build set of applied suggestion keys
@@ -1654,10 +1654,10 @@ function renderDocuments() {
           <div class="document-card-header">
             <span class="document-filename">${escapeHtml(doc.filename || doc.id)}</span>
             <span class="document-status ${doc.status}">${escapeHtml(doc.status)}</span>
-            ${doc.status === 'uploaded' ? `<button class="scenario-analyze-btn" onclick="event.stopPropagation(); analyzeDocument('${doc.id}')">Analyze</button>` : ''}
+            ${doc.status === 'uploaded' ? `<button class="scenario-analyze-btn" onclick="event.stopPropagation(); analyzeDocument('${doc.id}')">Analysera</button>` : ''}
             ${doc.status === 'analyzed' ? `<label class="include-toggle" onclick="event.stopPropagation()"><input type="checkbox" ${doc.included ? 'checked' : ''} onchange="toggleDocumentIncluded('${doc.id}', this.checked)"></label>` : ''}
             <div class="document-card-actions">
-              <button class="doc-delete-btn" onclick="event.stopPropagation(); deleteDocument('${doc.id}')" title="Delete document">
+              <button class="doc-delete-btn" onclick="event.stopPropagation(); deleteDocument('${doc.id}')" title="Radera">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
               </button>
               <svg class="doc-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
@@ -1677,14 +1677,14 @@ function renderDocuments() {
 
 function renderDocumentSuggestions(doc, appliedKeys) {
   if (!doc.suggestions || doc.suggestions.length === 0) {
-    if (doc.status === 'analyzed') return '<div class="document-suggestions"><div class="doc-empty-state">No relevant suggestions found.</div></div>';
-    if (doc.status === 'analyzing') return '<div class="document-suggestions"><div class="doc-empty-state">Analyzing document...</div></div>';
-    if (doc.status === 'error') return '<div class="document-suggestions"><div class="doc-empty-state" style="color:var(--red)">Analysis failed.</div></div>';
+    if (doc.status === 'analyzed') return '<div class="document-suggestions"><div class="doc-empty-state">Inga relevanta förslag hittades.</div></div>';
+    if (doc.status === 'analyzing') return '<div class="document-suggestions"><div class="doc-empty-state">Analyserar dokument...</div></div>';
+    if (doc.status === 'error') return '<div class="document-suggestions"><div class="doc-empty-state" style="color:var(--red)">Analysen misslyckades.</div></div>';
     return '';
   }
 
   let html = '<div class="document-suggestions">';
-  html += `<div class="suggestions-header"><h4>${doc.suggestions.length} Suggestion${doc.suggestions.length !== 1 ? 's' : ''}</h4></div>`;
+  html += `<div class="suggestions-header"><h4>${doc.suggestions.length} förslag från analys</h4></div>`;
 
   for (let i = 0; i < doc.suggestions.length; i++) {
     const s = doc.suggestions[i];
@@ -1709,8 +1709,8 @@ function renderDocumentSuggestions(doc, appliedKeys) {
         </div>
         <span class="suggestion-confidence ${s.confidence || 'medium'}">${escapeHtml(s.confidence || 'medium')}</span>
         ${isApplied
-          ? '<span class="suggestion-apply-btn applied">Applied</span>'
-          : `<button class="suggestion-apply-btn" onclick="event.stopPropagation(); applyDocumentSuggestion('${doc.id}', ${i})">Apply</button>`
+          ? '<span class="suggestion-apply-btn applied">Tillämpad</span>'
+          : `<button class="suggestion-apply-btn" onclick="event.stopPropagation(); applyDocumentSuggestion('${doc.id}', ${i})">Tillämpa</button>`
         }
       </div>`;
   }
@@ -1740,14 +1740,14 @@ async function uploadDocument(file) {
   formData.append('pdf', file);
   try {
     const res = await fetch('/api/documents/upload', { method: 'POST', body: formData });
-    if (!res.ok) { const err = await res.json(); alert('Upload failed: ' + (err.error || 'Unknown')); return; }
+    if (!res.ok) { const err = await res.json(); alert('Uppladdning misslyckades: ' + (err.error || 'Okänt')); return; }
     const doc = await res.json();
     documents.push(doc);
     expandedDocId = doc.id;
     renderDocuments();
   } catch (err) {
     console.error('Upload error:', err);
-    alert('Upload failed: ' + err.message);
+    alert('Uppladdning misslyckades: ' + err.message);
   }
 }
 
@@ -1783,7 +1783,7 @@ async function applyDocumentSuggestion(docId, suggestionIndex) {
   const node = findNode(DECISION_TREE, s.nodeId);
   if (!node?.scores?.[s.company]) return;
   const currentData = node.scores[s.company];
-  const motivation = `[Document: ${doc.filename}] ${s.rationale || 'AI-suggested score update'}`;
+  const motivation = `[Dokument: ${doc.filename}] ${s.rationale || 'AI-föreslagen poänguppdatering'}`;
   const newRationale = s.rationale || currentData.rationale;
   await saveScoreChange(s.nodeId, s.company, currentData.score, s.suggestedScore, currentData.rationale, newRationale, motivation, docId);
   node.scores[s.company].score = s.suggestedScore;
@@ -1800,7 +1800,7 @@ async function toggleDocumentIncluded(docId, included) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ included })
     });
-    if (!res.ok) { alert('Failed to toggle document inclusion'); return; }
+    if (!res.ok) { alert('Kunde inte ändra dokumentinkludering'); return; }
     location.reload();
   } catch (err) {
     console.error('Toggle error:', err);
@@ -1809,10 +1809,10 @@ async function toggleDocumentIncluded(docId, included) {
 
 async function deleteDocument(docId) {
   const doc = documents.find(d => d.id === docId);
-  if (!confirm(`Delete "${doc?.filename || docId}" and remove all its applied score changes?`)) return;
+  if (!confirm(`Radera "${doc?.filename || docId}" och ta bort alla tillhörande poängändringar?`)) return;
   try {
     const res = await fetch(`/api/documents/${docId}`, { method: 'DELETE' });
-    if (!res.ok) { alert('Failed to delete document'); return; }
+    if (!res.ok) { alert('Kunde inte radera dokumentet'); return; }
     location.reload();
   } catch (err) {
     console.error('Delete error:', err);
@@ -1857,7 +1857,7 @@ function updateScorePreview(value) {
 async function saveEdit() {
   if (!editingNodeId || !editingCompany) return;
   const motivation = document.getElementById('edit-motivation').value.trim();
-  if (!motivation) { alert('Please provide a motivation for the change.'); return; }
+  if (!motivation) { alert('Ange en motivering för ändringen.'); return; }
 
   const node = findNode(DECISION_TREE, editingNodeId);
   const oldData = node.scores[editingCompany];
@@ -1904,7 +1904,7 @@ let aiNodeContext = null;
 function openAIPanel(nodeId) {
   aiNodeContext = nodeId ? findNode(DECISION_TREE, nodeId) : null;
   const label = document.getElementById('ai-context-label');
-  if (label) label.textContent = aiNodeContext ? `Discussing: ${aiNodeContext.label}` : 'Snigel AI Advisor';
+  if (label) label.textContent = aiNodeContext ? `Diskuterar: ${aiNodeContext.label}` : 'Snigel AI-rådgivare';
 
   document.getElementById('ai-panel').classList.add('open');
   document.getElementById('ai-overlay').classList.add('open');
@@ -1913,10 +1913,10 @@ function openAIPanel(nodeId) {
   const qa = document.getElementById('ai-quick-actions');
   if (qa && aiNodeContext) {
     qa.innerHTML = [
-      'Challenge this assessment',
-      'Suggest improvements for Snigel',
-      'Compare top competitors here',
-      'Strategic recommendations'
+      'Ifrågasätt denna bedömning',
+      'Föreslå förbättringar för Snigel',
+      'Jämför toppkonkurrenter här',
+      'Strategiska rekommendationer'
     ].map(q => `<button class="ai-quick-btn" onclick="sendQuickMessage('${q}')">${q}</button>`).join('');
   }
 }
@@ -1943,13 +1943,13 @@ async function sendMessage() {
   // Build context
   let context = '';
   if (aiNodeContext) {
-    context = `Current node: ${aiNodeContext.label} (${aiNodeContext.id}). `;
+    context = `Aktuell nod: ${aiNodeContext.label} (${aiNodeContext.id}). `;
     if (aiNodeContext.scores) {
       const scoreLines = companyKeys.map(k => {
         const s = aiNodeContext.scores[k];
         return s ? `${COMPANIES[k].name}: ${s.score}/10 - ${s.rationale}` : null;
       }).filter(Boolean).join('; ');
-      context += `Scores: ${scoreLines}`;
+      context += `Poäng: ${scoreLines}`;
     }
   }
 
@@ -1957,7 +1957,7 @@ async function sendMessage() {
   const messagesDiv = document.getElementById('ai-messages');
   const typing = document.createElement('div');
   typing.className = 'ai-message assistant typing';
-  typing.textContent = 'Thinking...';
+  typing.textContent = 'Tänker...';
   messagesDiv.appendChild(typing);
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
@@ -1973,12 +1973,12 @@ async function sendMessage() {
     if (data.content) {
       aiMessages.push({ role: 'assistant', content: data.content });
     } else if (data.error) {
-      aiMessages.push({ role: 'assistant', content: `Error: ${data.error}` });
+      aiMessages.push({ role: 'assistant', content: `Fel: ${data.error}` });
     }
     renderAIMessages();
   } catch (err) {
     typing.remove();
-    aiMessages.push({ role: 'assistant', content: `Connection error: ${err.message}` });
+    aiMessages.push({ role: 'assistant', content: `Anslutningsfel: ${err.message}` });
     renderAIMessages();
   }
 }
