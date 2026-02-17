@@ -2,7 +2,7 @@
    Snigel Marknadspositioneringsverktyg — Applikationslogik
    ═══════════════════════════════════════════════════════ */
 
-const DECISION_TREE = {
+let DECISION_TREE = {
   id: "root", label: "Snigel Strategisk Position", weight: "100%",
   description: "Övergripande konkurrenspositionering inom europeisk taktisk bärutrustning, skyddssystem och yrkeskläder.",
   children: [
@@ -544,6 +544,9 @@ const DECISION_TREE = {
   ]
 };
 
+// Deep copy of original tree for AI reference and reset
+const DEFAULT_DECISION_TREE = JSON.parse(JSON.stringify(DECISION_TREE));
+
 const COMPANIES = {
   "snigel": { name: "Snigel Design AB", country: "Sverige", platform: "Modulära bärsystem, plattbärare och taktisk klädsel", color: "#4a9eff",
     specs: { "HQ": "Farsta, Sverige", "Grundat": "1990", "Omsättning": "~365 MSEK (2024)", "Anställda": "~25", "Fokus": "Bärsystem, skyddslösningar, taktisk klädsel", "Säljkanal": "B2G dominant, B2B/B2C" },
@@ -743,6 +746,13 @@ function renderNode(node, depth, expanded) {
 
   html += `<span class="tree-node-label">${escapeHtml(node.label)}</span>`;
   if (node.weight) html += `<span class="tree-node-weight">${escapeHtml(node.weight)}</span>`;
+
+  // Edit tree icon on root node
+  if (node.id === 'root') {
+    html += `<button class="tree-edit-icon" title="Redigera trädstruktur" onclick="event.stopPropagation(); openTreeEditor()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.83 2.83 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+    </button>`;
+  }
 
   // Mini score bar for leaf nodes
   if (isLeaf) {
@@ -2061,6 +2071,17 @@ function formatMarkdown(text) {
 
 // ── Initialization ──
 async function init() {
+  // Load persisted tree structure
+  try {
+    const treeRes = await fetch('/api/tree');
+    const treeData = await treeRes.json();
+    if (treeData.tree) {
+      DECISION_TREE = treeData.tree;
+    }
+  } catch (e) {
+    console.error('Failed to load tree:', e);
+  }
+
   // Load persisted changes
   try {
     const changesRes = await fetch('/api/changes');
@@ -2094,3 +2115,295 @@ async function init() {
 }
 
 init();
+
+/* ═══════════════════════════════════════════════════════
+   Tree Structure Editor
+   All rendering uses DOM APIs (createElement/textContent)
+   to avoid innerHTML-based XSS risks.
+   ═══════════════════════════════════════════════════════ */
+
+function generateNodeId() {
+  return `custom-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function findParentInTree(tree, nodeId) {
+  if (tree.children) {
+    for (const child of tree.children) {
+      if (child.id === nodeId) return tree;
+      const found = findParentInTree(child, nodeId);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+function openTreeEditor() {
+  const overlay = document.getElementById('tree-editor-overlay');
+  overlay.style.display = 'flex';
+  renderEditorTree();
+}
+
+function closeTreeEditor() {
+  document.getElementById('tree-editor-overlay').style.display = 'none';
+}
+
+function renderEditorTree() {
+  const body = document.getElementById('tree-editor-body');
+  while (body.firstChild) body.removeChild(body.firstChild);
+  body.appendChild(renderEditorNode(DECISION_TREE, 0));
+}
+
+function renderEditorNode(node, depth) {
+  const div = document.createElement('div');
+  div.className = `tree-editor-node depth-${Math.min(depth, 4)}`;
+  div.dataset.nodeId = node.id;
+
+  const hasChildren = node.children && node.children.length > 0;
+  const isRoot = node.id === 'root';
+  const isLeaf = !hasChildren;
+
+  const header = document.createElement('div');
+  header.className = 'tree-editor-node-header';
+
+  const labelInput = document.createElement('input');
+  labelInput.type = 'text';
+  labelInput.className = 'tree-editor-node-label';
+  labelInput.value = node.label;
+  labelInput.addEventListener('change', () => updateEditorField(node.id, 'label', labelInput.value));
+  header.appendChild(labelInput);
+
+  const weightInput = document.createElement('input');
+  weightInput.type = 'text';
+  weightInput.className = 'tree-editor-node-weight';
+  weightInput.value = node.weight || '';
+  weightInput.placeholder = '0%';
+  weightInput.addEventListener('change', () => updateEditorField(node.id, 'weight', weightInput.value));
+  header.appendChild(weightInput);
+
+  if (isLeaf) {
+    const badge = document.createElement('span');
+    badge.className = 'tree-editor-node-leaf-badge';
+    badge.textContent = 'löv';
+    header.appendChild(badge);
+  }
+
+  const actions = document.createElement('div');
+  actions.className = 'tree-editor-node-actions';
+
+  const descBtn = document.createElement('button');
+  descBtn.className = 'tree-editor-desc-btn';
+  descBtn.textContent = 'Beskr.';
+  descBtn.addEventListener('click', () => {
+    const descInput = div.querySelector('.tree-editor-node-description');
+    if (descInput) descInput.classList.toggle('visible');
+  });
+  actions.appendChild(descBtn);
+
+  const addBtn = document.createElement('button');
+  addBtn.className = 'tree-editor-add-btn';
+  addBtn.textContent = '+ Lägg till';
+  addBtn.addEventListener('click', () => addEditorChild(node.id));
+  actions.appendChild(addBtn);
+
+  if (hasChildren) {
+    const aiBtn = document.createElement('button');
+    aiBtn.className = 'tree-editor-ai-btn';
+    aiBtn.textContent = 'AI Balansera';
+    aiBtn.addEventListener('click', () => aiBalanceWeights(node.id, aiBtn));
+    actions.appendChild(aiBtn);
+  }
+
+  if (!isRoot) {
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'tree-editor-remove-btn';
+    removeBtn.textContent = '\u2715';
+    removeBtn.addEventListener('click', () => removeEditorNode(node.id));
+    actions.appendChild(removeBtn);
+  }
+
+  header.appendChild(actions);
+  div.appendChild(header);
+
+  const descInput = document.createElement('input');
+  descInput.type = 'text';
+  descInput.className = 'tree-editor-node-description';
+  descInput.value = node.description || '';
+  descInput.placeholder = 'Nodbeskrivning...';
+  descInput.addEventListener('change', () => updateEditorField(node.id, 'description', descInput.value));
+  div.appendChild(descInput);
+
+  if (hasChildren) {
+    const weightSum = node.children.reduce((sum, child) => {
+      const w = parseFloat((child.weight || '0').replace('%', ''));
+      return sum + (isNaN(w) ? 0 : w);
+    }, 0);
+    const rounded = Math.round(weightSum * 100) / 100;
+    if (Math.abs(rounded - 100) > 0.01) {
+      const warning = document.createElement('div');
+      warning.className = 'tree-editor-weight-warning';
+      warning.textContent = `Barnvikter summerar till ${rounded}% (ska vara 100%)`;
+      div.appendChild(warning);
+    }
+  }
+
+  if (hasChildren) {
+    const childrenDiv = document.createElement('div');
+    childrenDiv.className = 'tree-editor-children';
+    node.children.forEach(child => {
+      childrenDiv.appendChild(renderEditorNode(child, depth + 1));
+    });
+    div.appendChild(childrenDiv);
+  }
+
+  return div;
+}
+
+function updateEditorField(nodeId, field, value) {
+  const node = findNode(DECISION_TREE, nodeId);
+  if (node) {
+    node[field] = value;
+    if (field === 'weight') renderEditorTree();
+  }
+}
+
+function addEditorChild(parentId) {
+  const parent = findNode(DECISION_TREE, parentId);
+  if (!parent) return;
+
+  if (!parent.children) parent.children = [];
+
+  const defaultScores = {};
+  for (const key of companyKeys) {
+    defaultScores[key] = { score: 5.0, rationale: 'Standardpoäng \u2014 uppdatera med bed\u00f6mning.' };
+  }
+
+  const newNode = {
+    id: generateNodeId(),
+    label: 'Ny nod',
+    weight: '0%',
+    description: '',
+    scores: defaultScores
+  };
+
+  parent.children.push(newNode);
+
+  if (parent.scores && parent.children.length === 1) {
+    delete parent.scores;
+  }
+
+  renderEditorTree();
+}
+
+function removeEditorNode(nodeId) {
+  const node = findNode(DECISION_TREE, nodeId);
+  if (!node) return;
+
+  const hasChildren = node.children && node.children.length > 0;
+  if (hasChildren) {
+    if (!confirm('Ta bort "' + node.label + '" och alla undernoder?')) return;
+  }
+
+  const parent = findParentInTree(DECISION_TREE, nodeId);
+  if (parent && parent.children) {
+    parent.children = parent.children.filter(c => c.id !== nodeId);
+
+    if (parent.children.length === 0) {
+      delete parent.children;
+      if (!parent.scores) {
+        const defaultScores = {};
+        for (const key of companyKeys) {
+          defaultScores[key] = { score: 5.0, rationale: 'Standardpoäng \u2014 uppdatera med bed\u00f6mning.' };
+        }
+        parent.scores = defaultScores;
+      }
+    }
+  }
+
+  renderEditorTree();
+}
+
+async function aiBalanceWeights(nodeId, btnElement) {
+  const node = findNode(DECISION_TREE, nodeId);
+  if (!node || !node.children || !node.children.length) return;
+
+  if (btnElement) {
+    btnElement.disabled = true;
+    btnElement.textContent = 'Balanserar...';
+  }
+
+  try {
+    const res = await fetch('/api/tree/ai-balance', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ node, originalTree: DEFAULT_DECISION_TREE })
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'AI-balansering misslyckades');
+    }
+
+    const { balancedNode } = await res.json();
+    if (balancedNode && balancedNode.children) {
+      for (const balancedChild of balancedNode.children) {
+        const treeChild = node.children.find(c => c.id === balancedChild.id);
+        if (treeChild && balancedChild.weight) {
+          treeChild.weight = balancedChild.weight;
+        }
+      }
+    }
+
+    renderEditorTree();
+  } catch (err) {
+    console.error('AI balance error:', err);
+    alert('AI Balansering misslyckades: ' + err.message);
+  } finally {
+    if (btnElement) {
+      btnElement.disabled = false;
+      btnElement.textContent = 'AI Balansera';
+    }
+  }
+}
+
+async function saveTreeEdits() {
+  try {
+    const res = await fetch('/api/tree', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tree: DECISION_TREE })
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Sparning misslyckades');
+    }
+
+    closeTreeEditor();
+    renderTree();
+
+    if (selectedNode) {
+      const updated = findNode(DECISION_TREE, selectedNode.id);
+      if (updated) {
+        selectedNode = updated;
+        renderDetail(updated, selectedNodePath);
+      }
+    }
+  } catch (err) {
+    console.error('Save tree error:', err);
+    alert('Kunde inte spara tr\u00e4d: ' + err.message);
+  }
+}
+
+async function resetTreeToDefault() {
+  if (!confirm('\u00c5terst\u00e4ll beslutstr\u00e4det till originalstrukturen? Alla anpassade \u00e4ndringar f\u00f6rloras.')) return;
+
+  try {
+    await fetch('/api/tree', { method: 'DELETE' });
+    DECISION_TREE = JSON.parse(JSON.stringify(DEFAULT_DECISION_TREE));
+    renderTree();
+    closeTreeEditor();
+  } catch (err) {
+    console.error('Reset tree error:', err);
+    alert('Kunde inte \u00e5terst\u00e4lla tr\u00e4d: ' + err.message);
+  }
+}

@@ -10,6 +10,7 @@ const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 const DATA_FILE = path.join(DATA_DIR, 'changes.json');
 const DOCS_FILE = path.join(DATA_DIR, 'documents.json');
+const TREE_FILE = path.join(DATA_DIR, 'tree.json');
 
 // Ensure upload directory exists
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
@@ -410,6 +411,92 @@ app.post('/api/chat', async (req, res) => {
     });
   } catch (error) {
     console.error('API Error:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ── Tree Structure API endpoints ──
+app.get('/api/tree', (req, res) => {
+  try {
+    if (fs.existsSync(TREE_FILE)) {
+      const tree = JSON.parse(fs.readFileSync(TREE_FILE, 'utf8'));
+      return res.json({ tree });
+    }
+    res.json({ tree: null });
+  } catch (err) {
+    console.error('Failed to load tree:', err.message);
+    res.json({ tree: null });
+  }
+});
+
+app.post('/api/tree', (req, res) => {
+  const { tree } = req.body;
+  if (!tree || !tree.id || !tree.label || !tree.children) {
+    return res.status(400).json({ error: 'Invalid tree: must have id, label, and children' });
+  }
+  try {
+    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+    fs.writeFileSync(TREE_FILE, JSON.stringify(tree, null, 2));
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Failed to save tree:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/tree', (req, res) => {
+  try {
+    if (fs.existsSync(TREE_FILE)) fs.unlinkSync(TREE_FILE);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Failed to delete tree:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/tree/ai-balance', async (req, res) => {
+  try {
+    const { node, originalTree } = req.body;
+    if (!node || !node.children || !node.children.length) {
+      return res.status(400).json({ error: 'Node must have children to balance' });
+    }
+
+    const prompt = `Du hjälper till att balansera vikter i ett beslutsträd för marknadspositioneringsanalys av taktisk utrustning.
+
+Originalträdet hade dessa vikter:
+<original>${JSON.stringify(originalTree, null, 2)}</original>
+
+Användaren har modifierat trädet. Balansera viktningen av denna nods barn så att de summerar till 100%.
+Använd originalvikterna som vägledning för rimliga proportioner.
+
+<node>${JSON.stringify(node, null, 2)}</node>
+
+Returnera ENBART ett JSON-objekt med samma struktur men justerade "weight"-fält (som strängar t.ex. "35%").
+Alla barnvikter måste summera till exakt 100%. Behåll alla andra fält oförändrade.`;
+
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-5-20250929',
+      max_tokens: 8192,
+      messages: [{ role: 'user', content: prompt }]
+    });
+
+    const responseText = response.content[0].text;
+    let balancedNode;
+    try {
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        balancedNode = JSON.parse(jsonMatch[0]);
+      } else {
+        throw new Error('No JSON found in response');
+      }
+    } catch (e) {
+      console.error('Failed to parse AI balance response:', e.message);
+      return res.status(500).json({ error: 'Failed to parse AI response' });
+    }
+
+    res.json({ balancedNode });
+  } catch (error) {
+    console.error('AI balance error:', error.message);
     res.status(500).json({ error: error.message });
   }
 });
