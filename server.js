@@ -94,7 +94,7 @@ if (SITE_PASSWORD) {
       const [, password] = Buffer.from(encoded, 'base64').toString().split(':');
       if (password === SITE_PASSWORD) return next();
     }
-    res.set('WWW-Authenticate', 'Basic realm="Luleå-Class Decision Tool"');
+    res.set('WWW-Authenticate', 'Basic realm="Snigel Marknadspositioneringsverktyg"');
     res.status(401).send('Access denied');
   });
 }
@@ -200,34 +200,34 @@ app.post('/api/documents/:id/analyze', async (req, res) => {
     const docText = (doc.extractedText || '').slice(0, 50000);
     const criteriaJson = JSON.stringify(leafNodes, null, 2);
 
-    const analysisPrompt = `You are analyzing a document against a naval procurement decision framework.
-Below is the extracted text from "${doc.filename}".
+    const analysisPrompt = `Du analyserar ett dokument mot ett ramverk för marknadspositionering inom europeisk försvarsutrustning.
+Nedan är extraherad text från "${doc.filename}".
 
 <document>
 ${docText}
 </document>
 
-Below are the 53 leaf-level decision criteria. For each criterion where the document
-contains relevant information, suggest updated scores for one or more companies.
+Nedan finns bladnivå-kriterier i beslutsträdet. För varje kriterium där dokumentet
+innehåller relevant information, föreslå uppdaterade poäng för ett eller flera företag.
 
 <criteria>
 ${criteriaJson}
 </criteria>
 
-Companies: Naval Group (naval-group), Babcock/Saab (babcock-saab), Navantia (navantia)
+Företag: Snigel (snigel), NFM Group (nfm), Sacci AB (sacci), PTD Group (ptd), Savotta (savotta), Taiga AB (taiga), Lindnerhof (lindnerhof), Mehler Systems (mehler), Tasmanian Tiger (tt), Equipnor (equipnor)
 
-Respond with ONLY a JSON array of suggestions:
+Svara med ENBART en JSON-array av förslag:
 [{
-  "nodeId": "cap-aaw-radar",
-  "company": "naval-group",
+  "nodeId": "prod-barsystem-bredd",
+  "company": "snigel",
   "suggestedScore": 9.5,
-  "rationale": "Brief justification based on document evidence",
+  "rationale": "Kort motivering baserad på dokumentbevis",
   "confidence": "high|medium|low",
-  "excerpt": "Relevant quote or page reference from document"
+  "excerpt": "Relevant citat eller sidreferens från dokumentet"
 }]
 
-Only include nodes/companies where the document provides meaningful evidence.
-Do not suggest scores where the document is silent or irrelevant.`;
+Inkludera bara noder/företag där dokumentet ger meningsfullt bevis.
+Föreslå inte poäng där dokumentet är tyst eller irrelevant.`;
 
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-5-20250929',
@@ -316,31 +316,31 @@ app.post('/api/scenarios/analyze', async (req, res) => {
 
     const criteriaJson = JSON.stringify(leafNodes, null, 2);
 
-    const analysisPrompt = `You are analyzing a hypothetical scenario for the Swedish Luleå-class frigate procurement.
+    const analysisPrompt = `Du analyserar ett hypotetiskt scenario för Snigels marknadspositionering inom europeisk försvarsutrustning.
 
 <scenario>
 ${scenario}
 </scenario>
 
-Below are the 53 leaf-level decision criteria with current scores.
+Nedan finns bladnivå-kriterier med aktuella poäng.
 
 <criteria>
 ${criteriaJson}
 </criteria>
 
-Companies: Naval Group (naval-group), Babcock/Saab (babcock-saab), Navantia (navantia)
+Företag: Snigel (snigel), NFM Group (nfm), Sacci AB (sacci), PTD Group (ptd), Savotta (savotta), Taiga AB (taiga), Lindnerhof (lindnerhof), Mehler Systems (mehler), Tasmanian Tiger (tt), Equipnor (equipnor)
 
-Given this scenario, suggest how scores would change. Respond with ONLY a JSON array:
+Givet detta scenario, föreslå hur poängen skulle förändras. Svara med ENBART en JSON-array:
 [{
   "nodeId": "...",
   "company": "...",
   "suggestedScore": 9.5,
-  "rationale": "Brief justification",
+  "rationale": "Kort motivering",
   "confidence": "high|medium|low"
 }]
 
-Only include nodes/companies where the scenario meaningfully affects the score.
-Do not repeat unchanged scores.`;
+Inkludera bara noder/företag där scenariot meningsfullt påverkar poängen.
+Upprepa inte oförändrade poäng.`;
 
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-5-20250929',
@@ -368,24 +368,29 @@ Do not repeat unchanged scores.`;
   }
 });
 
-const SYSTEM_PROMPT = `You are an expert analyst specializing in European naval procurement, Swedish defence policy, and military shipbuilding. You have deep knowledge of the Swedish Luleå-class surface combatant procurement programme.
+const SYSTEM_PROMPT = `Du är en expertanalytiker specialiserad på europeiska försvarsmarknader, taktisk utrustningsindustri, militära upphandlingsprocesser och konkurrensanalys. Du har djup kunskap om Snigel Design AB och det taktiska militärutrustningslandskapet.
 
-Key context:
-- Sweden is procuring four Luleå-class frigates (>120m, 3,000-4,650t displacement)
-- Programme value: SEK 40-60 billion
-- Timeline: Contract H1 2026, first two ships by 2030, all four by 2035
-- Shifted from domestic "Visby Gen 2" to "catalogue ship" (off-the-shelf) approach
-- Strong emphasis on NATO IAMD contribution, air defence, ASW, endurance
-- FMV oversees procurement; Defence Minister Pål Jonson is key political figure
+Nyckelkontext:
+- Snigel Design AB är ett svenskt företag som tillverkar taktisk militärutrustning inklusive modulära bärsystem, taktisk klädsel och skyddsutrustning
+- Grundat 1990 av Per-Henrik Magnusson, f.d. fallskärmsjägare med M.F.A. i industriell design
+- Omsättning ~365 MSEK (2024), ~25 anställda, HQ i Farsta
+- 2025: eEquity-ledd investering, investerargruppen äger ca 50% — fokus internationalisering
+- Nyckelmarknader: Sverige (hemmamarknad), Norden, Tyskland, expanderande i EU
 
-Three candidates:
-1. Naval Group (France) - FDI frigate (~4,500t, Sea Fire 500 radar, Sylver A50 VLS/Aster 30, lead ship Amiral Ronarc'h in service Oct 2025)
-2. Babcock with Saab (UK/Sweden) - Arrowhead 120 variant (~4,650t, Giraffe radars, Saab 9LV CMS, steel hull + composite superstructure, ~80 crew)
-3. Navantia (Spain) - ALFA 4000 light frigate (~4,000t, designed for NATO force structures, national combat system integration)
+Nyckelkonkurrenter:
+1. NFM Group (Norge) — Multisystem (THOR/SKJOLD/GARM), 3400+ anst, 243 MEUR, förvärvade Paul Boyé 2025
+2. Sacci AB (Sverige) — Bärsystem/medicinsk, Haglöfs-arv, Borlänge, ~150 MSEK
+3. PTD Group (Danmark) — Systemintegratör, "house of agencies", 250+ partners
+4. Savotta (Finland) — Dual-use bärsystem, AQAP/NATO CAGE, M23-ramavtal 37 MEUR
+5. Taiga AB (Sverige) — Arbetskläder/uniformer, Varberg, materialinnovation TMTP/TCIP
+6. Lindnerhof Taktik (Tyskland) — Premium taktisk gear, del av Mehler Systems-gruppen
+7. Mehler Systems (Tyskland) — Integrerad koncern (Mehler Protection+Lindnerhof+UF PRO), 1600+ anst
+8. Tasmanian Tiger (Tyskland) — Tatonka-gruppen, Open Factory Vietnam, global dealer-distribution
+9. Equipnor AB (Sverige/Norge) — NFM-division, myndighetsfokuserad systemleverantör
 
-Evaluation pillars (estimated weights): Capability 35%, Delivery/Schedule Risk 30%, Lifecycle Cost 20%, Industrial/Security-of-Supply 15%
+Sju analysepelare: Produktportfölj, Produktionskapacitet, Certifieringar, Marknadsposition, Innovation, Finansiell Styrka, Varumärke
 
-Be specific, analytical, and reference real programme details. When suggesting improvements or actions, be concrete and actionable. When debating scores, present evidence-based arguments.`;
+Svara alltid på svenska. Var specifik, analytisk och referera till verkliga marknadsdynamiker. När du föreslår förbättringar eller strategiska åtgärder, var konkret och handlingsinriktad.`;
 
 app.post('/api/chat', async (req, res) => {
   try {
@@ -411,5 +416,5 @@ app.post('/api/chat', async (req, res) => {
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
-  console.log(`\n  Luleå-Class Decision Tool running at http://localhost:${PORT}\n`);
+  console.log(`\n  Snigel Marknadspositioneringsverktyg körs på http://localhost:${PORT}\n`);
 });
