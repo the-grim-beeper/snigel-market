@@ -913,12 +913,43 @@ function renderPillarOverview(node) {
 
 // ── Company Profiles ──
 // Note: All dynamic text is sanitized via escapeHtml() before DOM insertion.
+let profileSearchQuery = '';
+
+function filterProfiles(query) {
+  profileSearchQuery = query.toLowerCase();
+  renderProfiles();
+}
+
 function renderProfiles() {
   const container = document.getElementById('profiles-container');
-  let html = '<div class="profiles-grid">';
 
+  // Search bar
+  let html = `<div class="profiles-search-bar">
+    <div class="profiles-search-input-wrap">
+      <svg class="profiles-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" class="profiles-search-input" placeholder="S\u00f6k f\u00f6retag, styrkor, specifikationer..." value="${escapeHtml(profileSearchQuery)}" oninput="filterProfiles(this.value)">
+    </div>
+    <span class="profiles-search-count"></span>
+  </div>`;
+
+  html += '<div class="profiles-grid">';
+
+  let matchCount = 0;
   for (const key of companyKeys) {
     const c = COMPANIES[key];
+
+    // Filter logic
+    if (profileSearchQuery) {
+      const haystack = [
+        c.name, c.country, c.platform,
+        ...Object.keys(c.specs), ...Object.values(c.specs),
+        ...(c.strengths || []),
+        ...(c.weaknesses || [])
+      ].join(' ').toLowerCase();
+      if (!haystack.includes(profileSearchQuery)) continue;
+    }
+    matchCount++;
+
     const overallScore = collectScores(DECISION_TREE, key);
     const isSnigel = key === 'snigel';
 
@@ -930,7 +961,7 @@ function renderProfiles() {
       </div>
       <p class="profile-platform">${escapeHtml(c.platform)}</p>
       <div class="profile-overall">
-        <span class="profile-overall-label">Totalpoäng</span>
+        <span class="profile-overall-label">Totalpo\u00e4ng</span>
         <span class="profile-overall-score">${overallScore !== null ? overallScore.toFixed(1) : '\u2014'}</span>
       </div>
     </div>`;
@@ -967,11 +998,36 @@ function renderProfiles() {
       html += '</ul></div>';
     }
 
+    // Explore button
+    html += `<div class="profile-actions">
+      <button class="profile-explore-btn" onclick="openCompanyChat('${key}')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        Utforska med AI
+      </button>
+    </div>`;
+
     html += '</div>';
   }
 
   html += '</div>';
   container.innerHTML = html;
+
+  // Update search count
+  const countEl = container.querySelector('.profiles-search-count');
+  if (countEl) {
+    countEl.textContent = profileSearchQuery
+      ? `${matchCount} av ${companyKeys.length} f\u00f6retag`
+      : `${companyKeys.length} f\u00f6retag`;
+  }
+
+  // Restore focus to search input if it was active
+  if (profileSearchQuery) {
+    const input = container.querySelector('.profiles-search-input');
+    if (input) {
+      input.focus();
+      input.setSelectionRange(input.value.length, input.value.length);
+    }
+  }
 }
 
 // ── Compare View ──
@@ -1910,11 +1966,13 @@ async function saveScoreChange(nodeId, company, oldScore, newScore, oldRationale
 
 // ── AI Chat ──
 let aiNodeContext = null;
+let aiCompanyContext = null;
 
 function openAIPanel(nodeId) {
   aiNodeContext = nodeId ? findNode(DECISION_TREE, nodeId) : null;
+  aiCompanyContext = null;
   const label = document.getElementById('ai-context-label');
-  if (label) label.textContent = aiNodeContext ? `Diskuterar: ${aiNodeContext.label}` : 'Snigel AI-rådgivare';
+  if (label) label.textContent = aiNodeContext ? `Diskuterar: ${aiNodeContext.label}` : 'Snigel AI-r\u00e5dgivare';
 
   document.getElementById('ai-panel').classList.add('open');
   document.getElementById('ai-overlay').classList.add('open');
@@ -1923,17 +1981,61 @@ function openAIPanel(nodeId) {
   const qa = document.getElementById('ai-quick-actions');
   if (qa && aiNodeContext) {
     qa.innerHTML = [
-      'Ifrågasätt denna bedömning',
-      'Föreslå förbättringar för Snigel',
-      'Jämför toppkonkurrenter här',
+      'Ifr\u00e5gas\u00e4tt denna bed\u00f6mning',
+      'F\u00f6resl\u00e5 f\u00f6rb\u00e4ttringar f\u00f6r Snigel',
+      'J\u00e4mf\u00f6r toppkonkurrenter h\u00e4r',
       'Strategiska rekommendationer'
     ].map(q => `<button class="ai-quick-btn" onclick="sendQuickMessage('${q}')">${q}</button>`).join('');
+  } else if (qa) {
+    qa.innerHTML = '';
   }
+}
+
+function openCompanyChat(companyKey) {
+  aiNodeContext = null;
+  aiCompanyContext = companyKey;
+  const company = COMPANIES[companyKey];
+  if (!company) return;
+
+  // Clear previous messages for fresh company conversation
+  aiMessages = [];
+
+  const label = document.getElementById('ai-context-label');
+  if (label) label.textContent = `Utforskar: ${company.name}`;
+
+  document.getElementById('ai-panel').classList.add('open');
+  document.getElementById('ai-overlay').classList.add('open');
+
+  // Company-specific quick actions
+  const qa = document.getElementById('ai-quick-actions');
+  if (qa) {
+    const isSnigel = companyKey === 'snigel';
+    const actions = isSnigel
+      ? [
+          'Analysera v\u00e5ra styrkor och svagheter',
+          'J\u00e4mf\u00f6r oss med st\u00f6rsta konkurrenterna',
+          'Strategiska tillv\u00e4xtm\u00f6jligheter',
+          'Vilka hot m\u00f6ter vi?'
+        ]
+      : [
+          `Hur konkurrerar ${company.name} mot Snigel?`,
+          `Analysera ${company.name}s styrkor och svagheter`,
+          `Vad kan Snigel l\u00e4ra av ${company.name}?`,
+          `Marknadsm\u00f6jligheter mot ${company.name}`
+        ];
+    qa.innerHTML = actions
+      .map(q => `<button class="ai-quick-btn" onclick="sendQuickMessage('${escapeHtml(q)}')">${escapeHtml(q)}</button>`)
+      .join('');
+  }
+
+  // Render messages (empty state with welcome)
+  renderAIMessages();
 }
 
 function closeAIPanel() {
   document.getElementById('ai-panel').classList.remove('open');
   document.getElementById('ai-overlay').classList.remove('open');
+  aiCompanyContext = null;
 }
 
 function sendQuickMessage(text) {
@@ -1959,7 +2061,42 @@ async function sendMessage() {
         const s = aiNodeContext.scores[k];
         return s ? `${COMPANIES[k].name}: ${s.score}/10 - ${s.rationale}` : null;
       }).filter(Boolean).join('; ');
-      context += `Poäng: ${scoreLines}`;
+      context += `Po\u00e4ng: ${scoreLines}`;
+    }
+  } else if (aiCompanyContext) {
+    const company = COMPANIES[aiCompanyContext];
+    if (company) {
+      context = `F\u00f6retag i fokus: ${company.name} (${company.country}). `;
+      context += `Plattform: ${company.platform}. `;
+
+      // Add specs
+      const specLines = Object.entries(company.specs).map(([k, v]) => `${k}: ${v}`).join(', ');
+      context += `Specifikationer: ${specLines}. `;
+
+      // Add strengths and weaknesses
+      if (company.strengths?.length) {
+        context += `Styrkor: ${company.strengths.join('; ')}. `;
+      }
+      if (company.weaknesses?.length) {
+        context += `Svagheter: ${company.weaknesses.join('; ')}. `;
+      }
+
+      // Add all pillar scores for this company
+      const overallScore = collectScores(DECISION_TREE, aiCompanyContext);
+      context += `Totalpo\u00e4ng: ${overallScore !== null ? overallScore.toFixed(1) : 'ej bed\u00f6md'}/10. `;
+      const pillarScores = DECISION_TREE.children.map(pillar => {
+        const ps = collectScores(pillar, aiCompanyContext);
+        return ps !== null ? `${pillar.label}: ${ps.toFixed(1)}/10` : null;
+      }).filter(Boolean).join(', ');
+      if (pillarScores) {
+        context += `Pelarpo\u00e4ng: ${pillarScores}. `;
+      }
+
+      // Add Snigel comparison context
+      if (aiCompanyContext !== 'snigel') {
+        const snigelOverall = collectScores(DECISION_TREE, 'snigel');
+        context += `(Snigel Design AB totalpo\u00e4ng: ${snigelOverall !== null ? snigelOverall.toFixed(1) : 'ej bed\u00f6md'}/10 f\u00f6r j\u00e4mf\u00f6relse.)`;
+      }
     }
   }
 
