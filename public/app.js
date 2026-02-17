@@ -730,7 +730,7 @@ function renderNode(node, depth, expanded) {
   const hasChildren = node.children && node.children.length > 0;
 
   let html = `<div class="tree-node depth-${Math.min(depth, 3)} ${isSelected ? 'selected' : ''} ${isLeaf ? 'leaf' : ''}"
-    onclick="selectNode('${node.id}')" data-id="${node.id}">`;
+    onclick="event.stopPropagation(); selectNode('${node.id}')" data-id="${node.id}">`;
 
   html += `<div class="tree-node-header">`;
   if (hasChildren) {
