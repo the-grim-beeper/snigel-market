@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const Anthropic = require('@anthropic-ai/sdk');
 const multer = require('multer');
@@ -92,8 +93,8 @@ const upload = multer({
   limits: { fileSize: 50 * 1024 * 1024 } // 50MB
 });
 
-// ── API key: set via ANTHROPIC_API_KEY env var (Railway) or paste here for local use ──
-const API_KEY = process.env.ANTHROPIC_API_KEY || '';
+// ── API key: set via ANTHROPIC_API_KEY env var (Railway) or in .env for local use ──
+const API_KEY = process.env.ANTHROPIC_API_KEY?.trim();
 // ─────────────────────────────────────────
 
 const app = express();
@@ -118,7 +119,10 @@ if (SITE_PASSWORD) {
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-const anthropic = new Anthropic(API_KEY ? { apiKey: API_KEY } : undefined);
+if (!API_KEY) {
+  console.error('WARNING: ANTHROPIC_API_KEY is not set. Chat features will not work.');
+}
+const anthropic = new Anthropic({ apiKey: API_KEY });
 
 // ── Score change API endpoints ──
 app.get('/api/changes', (req, res) => {
