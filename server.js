@@ -95,6 +95,7 @@ const upload = multer({
 
 // ── API key: set via ANTHROPIC_API_KEY env var (Railway) or in .env for local use ──
 const API_KEY = process.env.ANTHROPIC_API_KEY?.trim();
+console.log(`[BOOT] ANTHROPIC_API_KEY present: ${!!API_KEY}, length: ${API_KEY?.length ?? 0}, starts with: ${API_KEY?.slice(0, 7) ?? 'N/A'}`);
 // ─────────────────────────────────────────
 
 const app = express();
@@ -580,6 +581,17 @@ Svara med ENBART JSON:
     console.error('Persona generation error:', error.message);
     res.status(500).json({ error: error.message });
   }
+});
+
+// ── Diagnostics (remove after debugging) ──
+app.get('/api/debug/env', (req, res) => {
+  res.json({
+    apiKeyPresent: !!API_KEY,
+    apiKeyLength: API_KEY?.length ?? 0,
+    apiKeyPrefix: API_KEY?.slice(0, 7) ?? 'N/A',
+    nodeVersion: process.version,
+    env: Object.keys(process.env).filter(k => k.includes('ANTHROPIC') || k.includes('API')).sort()
+  });
 });
 
 const PORT = process.env.PORT || 8080;
